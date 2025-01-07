@@ -1,0 +1,20 @@
+      <CustomAlert
+        type="success"
+        message="Success - Everything went smoothly!"
+        onPress={() => Alert.alert("Success", "You clicked the success alert!")}
+      />
+      <CustomAlert
+        type="info"
+        message="Info - This is some information for you."
+        onPress={() => Alert.alert("Info", "You clicked the info alert!")}
+      />
+      <CustomAlert
+        type="alerta"
+        message="Warning - Be careful with this next step."
+        onPress={() => Alert.alert("alerta", "You clicked the warning alert!")}
+      />
+      <CustomAlert
+        type="error"
+        message="Error - Something went wrong."
+        onPress={() => Alert.alert("Error", "You clicked the error alert!")}
+      />

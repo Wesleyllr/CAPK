@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "272073001168",
+    "firebase_url": "https://pjfirebase-30a91-default-rtdb.firebaseio.com",
+    "project_id": "pjfirebase-30a91",
+    "storage_bucket": "pjfirebase-30a91.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:272073001168:android:82ba7b76386047cb2176d5",
+        "android_client_info": {
+          "package_name": "com.lampier.pjfirebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "272073001168-fobrmfbp0rnji9n0sij6u89op7711mtd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lampier.pjfirebase",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "272073001168-2n64nikk1i2nmg34siag4ddi798p5ii5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDdwZReTBbMkadDW3o4X6vOgM6bcpiiOQ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "272073001168-2n64nikk1i2nmg34siag4ddi798p5ii5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
