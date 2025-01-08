@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { auth, db } from "@/firebaseConfig";
 import { IOrder } from "@/types/types";
 import { OrderStatus } from "@/types/types";
 import { useOrders } from "@/hooks/useOrders";
@@ -21,6 +21,8 @@ export default function Pedidos() {
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const user = auth.currentUser;
+  const userId = user.uid;
 
   const { orders, loading, refreshing, setRefreshing, fetchOrders } =
     useOrders(showPending);
@@ -29,7 +31,7 @@ export default function Pedidos() {
     async (orderId: string, newStatus: OrderStatus) => {
       setIsUpdating(true);
       try {
-        const orderRef = doc(db, "orders", orderId);
+        const orderRef = doc(db, "orders", userId, "vendas", orderId);
         await updateDoc(orderRef, { status: newStatus });
         await fetchOrders();
         Alert.alert("Sucesso", "Status do pedido atualizado com sucesso");

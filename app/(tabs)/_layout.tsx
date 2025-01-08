@@ -108,13 +108,13 @@ const TabsLayout = () => {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "dash",
+          title: "Dash",
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               icon={icons.profile}
               color={color}
-              name="Perfil"
+              name="Dash"
               focused={focused}
             />
           ),

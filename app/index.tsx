@@ -38,9 +38,11 @@ const IndexScreen = () => {
   return (
     <View className="flex-1 justify-center items-center bg-white">
       <Image source={images.logo} resizeMode="contain" className="w-60 h-20" />
-      <Text className="text-2xl font-bold text-center">Seja bem vindo!</Text>
-      <Text className="text-2xl font-bold text-center">
-        Estamos verificando o Login...
+      <Text className="text-2xl font-bold text-center mt-4">
+        Seja bem vindo!
+      </Text>
+      <Text className="text-2xl font-bold text-center mt-2">
+        Estamos Preparando tudo...
       </Text>
       <ActivityIndicator size="large" className="color-secundaria-700" />
     </View>

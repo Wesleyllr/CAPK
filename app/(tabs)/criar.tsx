@@ -10,7 +10,7 @@ import { Image } from "expo-image";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CustomButton from "@/components/CustomButton";
-import { uploadImage } from "@/scripts/uploadImage";
+import { uploadProductImage } from "@/scripts/uploadImage";
 import { addProduct } from "@/scripts/productService";
 import { pickImagem } from "@/scripts/selecionarImagem";
 import FormFieldProduct from "@/components/FormFieldProduct";
@@ -73,7 +73,9 @@ const Criar = () => {
       const user = auth.currentUser;
       if (!user) throw new Error("Usuário não autenticado");
 
-      let imageUrl = selectedImage ? await uploadImage(selectedImage) : "";
+      let imageUrl = selectedImage
+        ? await uploadProductImage(selectedImage)
+        : "";
       const precoNumerico = parseFloat(productPreco.replace(/\D/g, "")) / 100;
       const custoNumerico = parseFloat(productCusto.replace(/\D/g, "")) / 100;
 
@@ -110,11 +112,11 @@ const Criar = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">
-      <Header 
-      title="Novo Produto" 
-      onGoBack={handleGoBack}
-      onSave={handleAddProduct} 
-      showSaveIcon={true} 
+      <Header
+        title="Novo Produto"
+        onGoBack={handleGoBack}
+        onSave={handleAddProduct}
+        showSaveIcon={true}
       />
 
       <ScrollView className="flex-1 bg-primaria" nestedScrollEnabled={true}>

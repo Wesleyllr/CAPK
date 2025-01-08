@@ -7,6 +7,7 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { signOut } from "firebase/auth";
@@ -28,6 +29,7 @@ const Perfil = () => {
     totalProducts: 0,
     recentSales: [],
   });
+  const [refreshing, setRefreshing] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const user = auth.currentUser;
   const userId = user.uid;
@@ -79,7 +81,13 @@ const Perfil = () => {
       Alert.alert("Erro", "Falha ao carregar informações do usuário");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadUserInfo();
   };
 
   const handleLogout = async () => {
@@ -129,6 +137,9 @@ const Perfil = () => {
       <ScrollView
         className="flex-1 p-6"
         contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View className="flex-row justify-between items-center mb-6">
           <Text className="text-2xl font-bold text-secundaria-900">Perfil</Text>

@@ -105,7 +105,7 @@ const Home = () => {
   };
 
   const StatCard = ({ title, value }) => (
-    <View className="bg-secundaria-50 p-4 rounded-lg flex-1 mx-1">
+    <View className="bg-secundaria-50 p-3 rounded-lg flex-1 mx-1">
       <Text className="text-quinta text-sm ">{title}</Text>
       <Text className="text-secundaria-900 text-lg font-bold">
         {new Intl.NumberFormat("pt-BR", {

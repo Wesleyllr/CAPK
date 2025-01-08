@@ -17,6 +17,7 @@ import { getUserInfo } from "@/userService";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { updateProfile } from "firebase/auth";
+import { uploadProfileImage } from "@/scripts/uploadImage";
 
 const EditProfile = () => {
   const [loading, setLoading] = useState(false);
@@ -58,17 +59,10 @@ const EditProfile = () => {
   const uploadImage = async (uri) => {
     try {
       setLoading(true);
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
-      const userId = auth.currentUser.uid;
-      const imageRef = ref(storage, `profile/${userId}`);
-
-      // Faz o upload da imagem
-      await uploadBytes(imageRef, blob);
-      const photoURL = await getDownloadURL(imageRef);
+      const photoURL = await uploadProfileImage(uri);
 
       // Atualiza o photoURL no Firestore
+      const userId = auth.currentUser.uid;
       await updateDoc(doc(db, "users", userId), { photoURL });
 
       // Atualiza o photoURL no Firebase Authentication
@@ -100,7 +94,7 @@ const EditProfile = () => {
       }
 
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
-      router.back();
+      router.push("/perfil");
     } catch (error) {
       Alert.alert("Erro", "Falha ao atualizar perfil");
     } finally {

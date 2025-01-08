@@ -14,7 +14,7 @@ export const useOrders = (showPending: boolean) => {
       const userId = auth.currentUser?.uid;
       if (!userId) throw new Error("Usuário não autenticado");
 
-      const ordersRef = collection(db, "orders");
+      const ordersRef = collection(db, "orders", userId, "vendas");
       const status = showPending ? "pending" : "completed";
       const q = query(
         ordersRef,
