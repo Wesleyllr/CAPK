@@ -64,7 +64,7 @@ const Perfil = () => {
       const recentSales = salesSnapshot.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }))
         .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 5);
+        .slice(0, 2);
 
       setUserInfo({
         name,

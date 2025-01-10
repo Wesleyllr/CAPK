@@ -57,33 +57,40 @@ const Home = () => {
       const weekStart = new Date(now.setDate(now.getDate() - 7));
       const monthStart = new Date(now.setDate(1));
 
-      // Referência à subcoleção 'vendas'
       const vendasRef = collection(db, "orders", userId, "vendas");
-      const q = query(
+
+      // Consulta para vendas com status "completed"
+      const completedQuery = query(
         vendasRef,
+        where("status", "==", "completed"),
         where("createdAt", ">=", Timestamp.fromDate(monthStart))
       );
-
-      const querySnapshot = await getDocs(q);
+      const completedSnapshot = await getDocs(completedQuery);
 
       let daily = 0,
         weekly = 0,
         monthly = 0;
-      const pending = [];
 
-      querySnapshot.forEach((doc) => {
+      completedSnapshot.forEach((doc) => {
         const order = { id: doc.id, ...doc.data() };
         const orderDate = order.createdAt.toDate();
 
         if (orderDate >= dayStart) daily += order.total;
         if (orderDate >= weekStart) weekly += order.total;
         monthly += order.total;
-
-        if (order.status === "pending") {
-          pending.push(order);
-        }
       });
 
+      // Consulta para pedidos pendentes
+      const pendingQuery = query(vendasRef, where("status", "==", "pending"));
+      const pendingSnapshot = await getDocs(pendingQuery);
+
+      const pending = [];
+      pendingSnapshot.forEach((doc) => {
+        const order = { id: doc.id, ...doc.data() };
+        pending.push(order);
+      });
+
+      // Atualiza os estados
       setSalesData({ daily, weekly, monthly });
       setPendingOrders(pending);
     } catch (error) {
@@ -244,7 +251,7 @@ const Home = () => {
                 <Ionicons name="storefront-outline" size={20} color="#7f5d5a" />
               }
               title="Produtos"
-              onPress={() => router.push("/vender")}
+              onPress={() => router.push("/screens/Produtos")}
             />
             <QuickAction
               icon={<Ionicons name="cube-outline" size={20} color="#7f5d5a" />}

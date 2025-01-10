@@ -8,8 +8,8 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { doc, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/firebaseConfig";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { db, auth } from "@/firebaseConfig";
 import { IOrder } from "@/types/types";
 import { OrderStatus } from "@/types/types";
 import { useOrders } from "@/hooks/useOrders";
@@ -21,27 +21,73 @@ export default function Pedidos() {
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const user = auth.currentUser;
-  const userId = user.uid;
 
   const { orders, loading, refreshing, setRefreshing, fetchOrders } =
     useOrders(showPending);
 
   const updateOrderStatus = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
-      setIsUpdating(true);
-      try {
-        const orderRef = doc(db, "orders", userId, "vendas", orderId);
-        await updateDoc(orderRef, { status: newStatus });
-        await fetchOrders();
-        Alert.alert("Sucesso", "Status do pedido atualizado com sucesso");
-      } catch (error) {
+      const handleUpdateStatus = async () => {
+        setIsUpdating(true);
+        try {
+          const user = auth.currentUser;
+          if (!user) {
+            throw new Error("Usuário não autenticado");
+          }
+
+          // Construir a referência correta do documento
+          const orderRef = doc(db, "orders", user.uid, "vendas", orderId);
+
+          // Verificar se o documento existe antes de tentar atualizar
+          const orderDoc = await getDoc(orderRef);
+          if (!orderDoc.exists()) {
+            throw new Error("Pedido não encontrado");
+          }
+
+          // Tentar atualizar o documento
+          await updateDoc(orderRef, {
+            status: newStatus,
+            updatedAt: new Date(),
+          });
+
+          // Atualizar a lista de pedidos
+          await fetchOrders();
+
+          // Mostrar mensagem apropriada
+          Alert.alert(
+            "Sucesso",
+            newStatus === "completed"
+              ? "Pedido finalizado com sucesso"
+              : "Pedido cancelado com sucesso"
+          );
+        } catch (error) {
+          console.error("Erro na atualização:", error);
+          Alert.alert(
+            "Erro ao atualizar status",
+            "Não foi possível atualizar o status do pedido. Por favor, tente novamente."
+          );
+        } finally {
+          setIsUpdating(false);
+        }
+      };
+
+      if (newStatus === "canceled") {
         Alert.alert(
-          "Erro ao atualizar status",
-          error instanceof Error ? error.message : "Erro desconhecido"
+          "Confirmar Cancelamento",
+          "Tem certeza que deseja cancelar este pedido?",
+          [
+            {
+              text: "Não",
+              style: "cancel",
+            },
+            {
+              text: "Sim",
+              onPress: handleUpdateStatus,
+            },
+          ]
         );
-      } finally {
-        setIsUpdating(false);
+      } else {
+        handleUpdateStatus();
       }
     },
     [fetchOrders]

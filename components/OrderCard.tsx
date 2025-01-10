@@ -41,9 +41,9 @@ const OrderCard = memo(({ order, onPress, onStatusUpdate }: OrderCardProps) => {
               <TouchableOpacity
                 onPress={() => onStatusUpdate(order.id, "completed")}
                 className="bg-quarta px-4 py-2 rounded"
-                accessibilityLabel="Completar pedido"
+                accessibilityLabel="Finalizar pedido"
               >
-                <Text className="text-primaria">Completar</Text>
+                <Text className="text-primaria">Finalizar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => onStatusUpdate(order.id, "canceled")}

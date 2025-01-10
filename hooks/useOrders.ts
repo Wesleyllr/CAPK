@@ -11,18 +11,19 @@ export const useOrders = (showPending: boolean) => {
 
   const fetchOrders = useCallback(async () => {
     try {
+      setLoading(!refreshing); // Apenas exibe o carregamento inicial
       const userId = auth.currentUser?.uid;
+
       if (!userId) throw new Error("Usuário não autenticado");
 
       const ordersRef = collection(db, "orders", userId, "vendas");
       const status = showPending ? "pending" : "completed";
-      const q = query(
-        ordersRef,
-        where("userId", "==", userId),
-        where("status", "==", status)
-      );
+
+      // Remove o filtro duplicado de `userId`
+      const q = query(ordersRef, where("status", "==", status));
 
       const querySnapshot = await getDocs(q);
+
       const ordersData = querySnapshot.docs.map(
         (doc) =>
           ({
@@ -33,6 +34,7 @@ export const useOrders = (showPending: boolean) => {
 
       setOrders(ordersData);
     } catch (error) {
+      console.error("Erro ao carregar pedidos:", error);
       Alert.alert(
         "Erro ao carregar pedidos",
         error instanceof Error ? error.message : "Erro desconhecido"
@@ -41,7 +43,7 @@ export const useOrders = (showPending: boolean) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showPending]);
+  }, [showPending, refreshing]);
 
   useEffect(() => {
     fetchOrders();

@@ -42,17 +42,22 @@ const Criar = () => {
     const uri = await pickImagem();
     if (uri) {
       setSelectedImage(uri);
-      setSelectedColor(null); // Limpa a cor selecionada quando uma imagem é escolhida
+      setSelectedColor(null); // Limpa a cor quando uma imagem é selecionada
     }
   };
 
   const handleColorSelect = (color) => {
     setSelectedColor(color);
-    setSelectedImage(null); // Limpa a imagem selecionada quando uma cor é escolhida
+    setSelectedImage(null); // Limpa a imagem quando uma cor é selecionada
   };
 
   const handleCategoryChange = (newCategory) => {
     setSelectedCategory(newCategory);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedImage(null);
+    setSelectedColor(null);
   };
 
   const handleAddProduct = async () => {
@@ -88,7 +93,7 @@ const Criar = () => {
         Timestamp.fromDate(new Date()),
         imageUrl,
         productCodigoBarra,
-        selectedColor // Pass selectedColor here
+        selectedColor
       );
 
       Alert.alert("Sucesso", "Produto adicionado com sucesso!");
@@ -174,38 +179,50 @@ const Criar = () => {
         />
 
         <View className="w-full h-40 mt-2 justify-center items-center flex-row px-4 gap-2">
-          {selectedImage ? (
-            <Image
-              source={{ uri: selectedImage }}
-              className="w-40 h-40 rounded-xl"
-              contentFit="contain"
-            />
-          ) : (
-            <View className="w-36 h-36 rounded-xl bg-secundaria-300 justify-center items-center ">
-              {selectedColor ? (
+          <View className="w-36 h-36 rounded-xl bg-secundaria-300 justify-center items-center">
+            {selectedImage ? (
+              <TouchableOpacity
+                onPress={handleClearSelection}
+                className="w-full h-full"
+              >
+                <Image
+                  source={{ uri: selectedImage }}
+                  className="w-full h-full rounded-xl"
+                  contentFit="contain"
+                />
+                <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
+                  <Text className="text-white text-xs">X</Text>
+                </View>
+              </TouchableOpacity>
+            ) : selectedColor ? (
+              <TouchableOpacity
+                onPress={handleClearSelection}
+                className="w-full h-full"
+              >
                 <View
                   className="w-full h-full rounded-xl"
                   style={{ backgroundColor: selectedColor }}
                 />
-              ) : (
-                <TouchableOpacity
-                  onPress={handleSelectImage}
-                  disabled={!!selectedColor}
-                  className="bg-black w-full h-full rounded-xl justify-center"
-                >
-                  <Text className="text-white text-center">
-                    Selecione uma imagem ou cor
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+                <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
+                  <Text className="text-white text-xs">X</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={handleSelectImage}
+                className="bg-black w-full h-full rounded-xl justify-center"
+              >
+                <Text className="text-white text-center">
+                  Selecione uma imagem ou cor
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <View className="flex-1 h-36 bg-secundaria-300 border border-secundaria-700 rounded-xl justify-center">
             <ColorSelector
               selectedColor={selectedColor}
               setSelectedColor={setSelectedColor}
               onColorSelect={handleColorSelect}
-              disabled={!!selectedImage}
             />
           </View>
         </View>
