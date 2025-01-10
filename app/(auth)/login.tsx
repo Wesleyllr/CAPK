@@ -86,7 +86,7 @@ const Login = () => {
     <SafeAreaView className="w-full h-full justify-center items-center">
       <LinearGradient
         colors={["#faeaed", "#e07c8f"]}
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 flex-1"
       />
       <View className="w-full h-full justify-center items-center px-4">
         <Text className="text-4xl font-bold text-center mb-5">

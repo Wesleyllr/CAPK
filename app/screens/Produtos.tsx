@@ -138,7 +138,7 @@ const Produtos = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">
-      <Header title="Meus Produtos" onGoBack={() => router.back()} />
+      <Header title="Meus Produtos" onGoBack={() => router.back()}  />
 
       <FlatList
         data={products}
@@ -146,6 +146,7 @@ const Produtos = () => {
         keyExtractor={(item) => item.id}
         numColumns={numColumns}
         key={numColumns}
+        className="mt-4"
         columnWrapperStyle={columnWrapperStyle}
         contentContainerStyle={{
           padding: Platform.OS === "web" ? 16 : 2,

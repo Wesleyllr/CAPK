@@ -101,7 +101,14 @@ const Perfil = () => {
         ]
       );
     } else {
-      performLogout();
+      Alert.alert(
+      "Sair",
+      "Deseja realmente sair?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Sair", style: "destructive", onPress: performLogout },
+      ]
+    );
     }
   };
 
