@@ -58,7 +58,10 @@ const Vender = () => {
 
   const columnWrapperStyle = useMemo(
     () => ({
-      justifyContent: Platform.OS === "web" ? "flex-start" as "flex-start" : "space-around" as "space-around",// Declara explicitamente o tipo
+      justifyContent:
+        Platform.OS === "web"
+          ? ("flex-start" as "flex-start")
+          : ("space-around" as "space-around"), // Declara explicitamente o tipo
       marginBottom: 16,
       gap: 16,
       paddingHorizontal: Platform.OS === "web" ? 16 : 8,
@@ -266,7 +269,6 @@ const Vender = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-primaria flex-col">
-
       <View className="w-full h-12 mt-2">
         <ScrollView
           horizontal
@@ -288,7 +290,7 @@ const Vender = () => {
           ))}
         </ScrollView>
       </View>
-
+      <View className="w-full h-1" />
       <View className="flex-1">
         <FlatList
           data={filteredAndSortedProducts}
@@ -302,7 +304,7 @@ const Vender = () => {
           }}
           ListHeaderComponent={
             <View
-              className={`px-4 mb-2 ${
+              className={`px-4 mb-2 mb-2 ${
                 Platform.OS === "web" ? "w-full mx-auto" : ""
               }`}
             >
