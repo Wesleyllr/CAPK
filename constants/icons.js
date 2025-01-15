@@ -17,6 +17,8 @@ import arrowBack from "../assets/icons/arrow_back.png";
 import add from "../assets/icons/add.png";
 import cancel from "../assets/icons/cancel.png";
 import save from "../assets/icons/save.png";
+import view_list from "../assets/icons/view_list.png";
+import view_grid from "../assets/icons/view_grid.png";
 
 export default {
   play,
@@ -38,4 +40,6 @@ export default {
   add,
   cancel,
   save,
+  view_list,
+  view_grid,
 };

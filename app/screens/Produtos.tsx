@@ -13,27 +13,32 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { getUserProducts } from "@/scripts/productService";
 import CardProduto1 from "@/components/CardProduto1";
+import CardProdutoSimples from "@/components/CardProdutoSimples";
 import Header from "@/components/CustomHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
+const VIEW_MODE_KEY = "products_view_mode";
 
 const Produtos = () => {
   const [products, setProducts] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("grid"); // "grid" ou "list"
   const router = useRouter();
   const { width } = useWindowDimensions();
 
   const getNumColumns = () => {
+    if (viewMode === "list") return 1;
+
     if (Platform.OS === "web") {
-      if (width > 1400) return 6; // Telas muito grandes
-      if (width > 1100) return 5; // Telas grandes
-      if (width > 800) return 4; // Telas médias
-      return 3; // Telas pequenas
+      if (width > 1400) return 6;
+      if (width > 1100) return 5;
+      if (width > 800) return 4;
+      return 3;
     }
-    return 3; // Mobile (iOS/Android)
+    return 3;
   };
 
   const numColumns = getNumColumns();
@@ -50,6 +55,32 @@ const Produtos = () => {
     }),
     []
   );
+
+  // Carregar preferência de visualização
+  useEffect(() => {
+    const loadViewMode = async () => {
+      try {
+        const savedViewMode = await AsyncStorage.getItem(VIEW_MODE_KEY);
+        if (savedViewMode) {
+          setViewMode(savedViewMode);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar modo de visualização:", error);
+      }
+    };
+    loadViewMode();
+  }, []);
+
+  // Salvar preferência de visualização
+  const toggleViewMode = async () => {
+    const newMode = viewMode === "grid" ? "list" : "grid";
+    setViewMode(newMode);
+    try {
+      await AsyncStorage.setItem(VIEW_MODE_KEY, newMode);
+    } catch (error) {
+      console.error("Erro ao salvar modo de visualização:", error);
+    }
+  };
 
   const loadCachedProducts = async () => {
     try {
@@ -119,26 +150,58 @@ const Produtos = () => {
     });
   };
 
-  const renderProduct = ({ item, index }) => (
-    <View
-      style={{
-        flex: Platform.OS === "web" ? 1 : undefined,
-        maxWidth: Platform.OS === "web" ? `${100 / numColumns}%` : undefined,
-      }}
+  const renderProduct = ({ item, index }) => {
+    if (viewMode === "list") {
+      return (
+        <View className="mb-2">
+          <CardProdutoSimples
+            title={item.title}
+            price={item.value}
+            imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
+            backgroundColor={item.backgroundColor}
+            onPress={() => handleEditProduct(item)}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <View
+        style={{
+          flex: Platform.OS === "web" ? 1 : undefined,
+          maxWidth: Platform.OS === "web" ? `${100 / numColumns}%` : undefined,
+        }}
+      >
+        <CardProduto1
+          title={item.title}
+          price={item.value}
+          imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
+          backgroundColor={item.backgroundColor}
+          onPress={() => handleEditProduct(item)}
+        />
+      </View>
+    );
+  };
+
+  const ViewModeButton = () => (
+    <TouchableOpacity
+      onPress={toggleViewMode}
+      className="px-4 py-2 bg-white rounded-lg mr-2"
     >
-      <CardProduto1
-        title={item.title}
-        price={item.value}
-        imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
-        backgroundColor={item.backgroundColor}
-        onPress={() => handleEditProduct(item)}
-      />
-    </View>
+      <Text className="text-primaria font-medium">
+        {viewMode === "grid" ? "Lista" : "Grade"}
+      </Text>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">
-      <Header title="Meus Produtos" onGoBack={() => router.back()}  />
+      <Header
+        title="Meus Produtos"
+        onGoBack={() => router.back()}
+        isCompactView={viewMode === "list"}
+        onToggleView={toggleViewMode}
+      />
 
       <FlatList
         data={products}
@@ -147,7 +210,9 @@ const Produtos = () => {
         numColumns={numColumns}
         key={numColumns}
         className="mt-4"
-        columnWrapperStyle={columnWrapperStyle}
+        columnWrapperStyle={
+          viewMode === "grid" ? columnWrapperStyle : undefined
+        }
         contentContainerStyle={{
           padding: Platform.OS === "web" ? 16 : 2,
         }}

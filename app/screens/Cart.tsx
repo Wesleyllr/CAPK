@@ -8,12 +8,33 @@ import { OrderService } from "@/services/OrderService";
 import { ICartItem } from "@/types/types";
 import { CompactCartItem } from "@/components/CompactCartItem";
 import Header from "@/components/CustomHeader";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import EventEmitter from "eventemitter3";
+
+// Criar uma instância global do EventEmitter
+export const cartEvents = new EventEmitter();
+
+const VIEW_MODE_KEY = "cart_view_mode";
 
 export default function Cart() {
   const router = useRouter();
   const [items, setItems] = useState<ICartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCompactView, setIsCompactView] = useState(false);
+
+  useEffect(() => {
+    const loadViewMode = async () => {
+      try {
+        const savedViewMode = await AsyncStorage.getItem(VIEW_MODE_KEY);
+        if (savedViewMode !== null) {
+          setIsCompactView(savedViewMode === "compact");
+        }
+      } catch (error) {
+        console.error("Erro ao carregar modo de visualização:", error);
+      }
+    };
+    loadViewMode();
+  }, []);
 
   const loadCart = async () => {
     try {
@@ -38,8 +59,10 @@ export default function Cart() {
     try {
       if (quantity === 0) {
         await CartService.removeItem(id);
+        cartEvents.emit("quantityChanged", { id, quantity: 0 });
       } else {
         await CartService.updateItem(id, { quantity });
+        cartEvents.emit("quantityChanged", { id, quantity });
       }
       await loadCart();
     } catch (error) {
@@ -50,6 +73,7 @@ export default function Cart() {
   const handleRemoveItem = async (id: string) => {
     try {
       await CartService.removeItem(id);
+      cartEvents.emit("quantityChanged", { id, quantity: 0 });
       await loadCart();
     } catch (error) {
       Alert.alert("Erro", "Falha ao remover item");
@@ -69,6 +93,8 @@ export default function Cart() {
     try {
       const orderId = await OrderService.createOrder(items, total, status);
       await CartService.clearCart();
+      // Emitir evento de limpeza do carrinho
+      cartEvents.emit("cartCleared");
       const statusText = status === "completed" ? "finalizado" : "em aberto";
       Alert.alert("Sucesso", `Pedido #${orderId} ${statusText}!`);
       router.back();
@@ -82,15 +108,24 @@ export default function Cart() {
     0
   );
 
+  const toggleViewMode = async () => {
+    const newMode = isCompactView ? "full" : "compact";
+    setIsCompactView(!isCompactView);
+    try {
+      await AsyncStorage.setItem(VIEW_MODE_KEY, newMode);
+    } catch (error) {
+      console.error("Erro ao salvar modo de visualização:", error);
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-primaria">
-      <Header 
-        title="Carrinho" 
-        onGoBack={handleGoBack} 
+      <Header
+        title="Carrinho"
+        onGoBack={handleGoBack}
         isCompactView={isCompactView}
-        onToggleView={() => setIsCompactView(!isCompactView)}
+        onToggleView={toggleViewMode}
       />
-
 
       <FlatList
         data={items}

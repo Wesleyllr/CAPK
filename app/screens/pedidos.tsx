@@ -22,8 +22,12 @@ export default function Pedidos() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const { orders, loading, refreshing, setRefreshing, fetchOrders } =
-    useOrders(showPending);
+  const { orders, loading, refreshing, setRefreshing, fetchOrders } = useOrders(
+    showPending,
+    10,
+    "createdAt",
+    "desc"
+  );
 
   const updateOrderStatus = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
@@ -158,7 +162,7 @@ export default function Pedidos() {
         <ActivityIndicator size="large" className="color-secundaria-700" />
       ) : (
         <FlatList
-          data={orders}
+          data={orders} // Ordena por createdAt (mais recente primeiro)
           renderItem={memoizedRenderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16 }}
@@ -169,7 +173,7 @@ export default function Pedidos() {
           }}
           ListEmptyComponent={
             <Text className="text-center text-quinta">
-              Nenhum pedido {showPending ? "pendente" : "completado"}
+              Nenhum pedido {showPending ? "pendente" : "finalizado"}
             </Text>
           }
         />

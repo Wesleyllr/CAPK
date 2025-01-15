@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Platform } from "react-native";
+import { cartEvents } from "../screens/Cart"; // Adicione este import
+
 import {
   View,
   Text,
@@ -21,12 +23,15 @@ import { getUserInfo } from "@/userService";
 import { getUserProducts } from "@/scripts/productService";
 import { getUserCategories } from "@/userService";
 import CardProduto1 from "@/components/CardProduto1";
-import { images } from "@/constants";
+import { icons, images } from "@/constants";
 import { CartService } from "@/services/CartService";
 import { useNavigation } from "@react-navigation/native";
+import { getColor } from "@/colors";
+import CardProdutoSimples from "@/components/CardProdutoSimples";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5;
+const VIEW_MODE_KEY = "products_view_mode";
 
 const Vender = () => {
   const router = useRouter();
@@ -43,8 +48,42 @@ const Vender = () => {
   const scaleAnim = new Animated.Value(1);
   const opacityAnim = new Animated.Value(1);
   const translateYAnim = new Animated.Value(0);
+  const [viewMode, setViewMode] = useState("grid"); // "grid" ou "list"
+  const [selectedQuantities, setSelectedQuantities] = useState<{
+    [key: string]: number;
+  }>({});
 
+  useEffect(() => {
+    const handleQuantityChange = ({ id, quantity }) => {
+      setSelectedQuantities((prev) => ({
+        ...prev,
+        [id]: quantity,
+      }));
+    };
+
+    cartEvents.on("quantityChanged", handleQuantityChange);
+
+    return () => {
+      cartEvents.off("quantityChanged", handleQuantityChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Listener para limpar as quantidades selecionadas quando o carrinho for limpo
+    const handleCartCleared = () => {
+      setSelectedQuantities({});
+    };
+
+    cartEvents.on("cartCleared", handleCartCleared);
+
+    // Cleanup do listener quando o componente for desmontado
+    return () => {
+      cartEvents.off("cartCleared", handleCartCleared);
+    };
+  }, []);
   const getNumColumns = () => {
+    if (viewMode === "list") return 1;
+
     if (Platform.OS === "web") {
       if (width > 1400) return 6; // Telas muito grandes
       if (width > 1100) return 5; // Telas grandes
@@ -55,6 +94,16 @@ const Vender = () => {
   };
 
   const numColumns = getNumColumns();
+
+  const toggleViewMode = async () => {
+    const newMode = viewMode === "grid" ? "list" : "grid";
+    setViewMode(newMode);
+    try {
+      await AsyncStorage.setItem(VIEW_MODE_KEY, newMode);
+    } catch (error) {
+      console.error("Erro ao salvar modo de visualização:", error);
+    }
+  };
 
   const columnWrapperStyle = useMemo(
     () => ({
@@ -158,7 +207,17 @@ const Vender = () => {
   };
 
   useEffect(() => {
-    fetchUserData();
+    const loadViewMode = async () => {
+      try {
+        const savedViewMode = await AsyncStorage.getItem(VIEW_MODE_KEY);
+        if (savedViewMode) {
+          setViewMode(savedViewMode);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar modo de visualização:", error);
+      }
+    };
+    loadViewMode();
   }, []);
 
   useEffect(() => {
@@ -234,6 +293,12 @@ const Vender = () => {
 
   const handleProductPress = async (product) => {
     try {
+      setSelectedQuantities((prev) => {
+        const currentQty = prev[product.id] || 0;
+        const newQty = currentQty + 1;
+        return { ...prev, [product.id]: newQty };
+      });
+
       const cartItem: ICartItem = {
         id: product.id,
         title: product.title,
@@ -250,22 +315,32 @@ const Vender = () => {
     }
   };
 
-  const renderProduct = ({ item, index }) => (
-    <View
-      style={{
-        flex: Platform.OS === "web" ? 1 : undefined,
-        maxWidth: Platform.OS === "web" ? `${100 / numColumns}%` : undefined,
-      }}
-    >
+  const renderProduct = ({ item, index }) => {
+    const quantity = selectedQuantities[item.id] || 0;
+
+    if (viewMode === "list") {
+      return (
+        <CardProdutoSimples
+          title={item.title}
+          price={item.value}
+          imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
+          backgroundColor={item.backgroundColor}
+          onPress={() => handleProductPress(item)}
+          quantity={quantity}
+        />
+      );
+    }
+    return (
       <CardProduto1
         title={item.title}
         price={item.value}
         imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
         backgroundColor={item.backgroundColor}
         onPress={() => handleProductPress(item)}
+        quantity={quantity}
       />
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-primaria flex-col">
@@ -297,23 +372,37 @@ const Vender = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderProduct}
           numColumns={numColumns}
-          key={numColumns} // Força recriação do FlatList quando muda o número de colunas
-          columnWrapperStyle={columnWrapperStyle}
+          key={`${numColumns}-${viewMode}`}
+          columnWrapperStyle={
+            viewMode === "grid" ? columnWrapperStyle : undefined
+          }
           contentContainerStyle={{
             padding: Platform.OS === "web" ? 16 : 2,
           }}
           ListHeaderComponent={
             <View
-              className={`px-4 mb-2 mb-2 ${
+              className={`px-4 mb-2 flex-row items-center ${
                 Platform.OS === "web" ? "w-full mx-auto" : ""
               }`}
             >
               <TextInput
-                className="h-12 px-3 bg-white rounded border border-gray-300"
+                className="h-12 px-3 flex-1 mr-2 bg-white rounded border border-gray-300"
                 placeholder="Buscar produto..."
                 value={searchText}
                 onChangeText={setSearchText}
               />
+              <TouchableOpacity onPress={toggleViewMode} className="h-10 w-10 ">
+                <View className="w-10 h-10 rounded-lg">
+                  <Image
+                    source={
+                      viewMode === "grid" ? icons.view_list : icons.view_grid
+                    }
+                    className="flex-1"
+                    contentFit="contain"
+                    tintColor={getColor("secundaria-500")}
+                  />
+                </View>
+              </TouchableOpacity>
             </View>
           }
           ListEmptyComponent={() => (
