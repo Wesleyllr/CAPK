@@ -82,15 +82,15 @@ const Vender = () => {
     };
   }, []);
   const getNumColumns = () => {
-    if (viewMode === "list") return 1;
-
     if (Platform.OS === "web") {
+      if (viewMode === "list") return 2; // Exibe 2 colunas para "list" na web
       if (width > 1400) return 6; // Telas muito grandes
       if (width > 1100) return 5; // Telas grandes
       if (width > 800) return 4; // Telas médias
       return 3; // Telas pequenas
     }
-    return 3; // Mobile (iOS/Android)
+    if (viewMode === "list") return 1; // Mobile (iOS/Android)
+    return 3; // Mobile padrão
   };
 
   const numColumns = getNumColumns();
@@ -105,19 +105,23 @@ const Vender = () => {
     }
   };
 
-  const columnWrapperStyle = useMemo(
-    () => ({
-      justifyContent:
-        Platform.OS === "web"
-          ? ("flex-start" as "flex-start")
-          : ("space-around" as "space-around"), // Declara explicitamente o tipo
+  const columnWrapperStyle = useMemo(() => {
+    if (viewMode === "list") {
+      return {
+        flexDirection: "row",
+        justifyContent:
+          Platform.OS === "web" ? "space-between" : "space-around",
+        marginBottom: 16,
+        paddingHorizontal: Platform.OS === "web" ? 16 : 8,
+      };
+    }
+    return {
+      justifyContent: Platform.OS === "web" ? "flex-start" : "space-around",
       marginBottom: 16,
       gap: 16,
       paddingHorizontal: Platform.OS === "web" ? 16 : 8,
-    }),
-    []
-  );
-
+    };
+  }, [viewMode]);
   const animateButton = () => {
     Animated.sequence([
       // Aumenta o tamanho do botão com suavidade
@@ -366,16 +370,14 @@ const Vender = () => {
         </ScrollView>
       </View>
       <View className="w-full h-1" />
-      <View className="flex-1">
+      <View className="flex-1 px-1">
         <FlatList
           data={filteredAndSortedProducts}
           keyExtractor={(item) => item.id}
           renderItem={renderProduct}
           numColumns={numColumns}
-          key={`${numColumns}-${viewMode}`}
-          columnWrapperStyle={
-            viewMode === "grid" ? columnWrapperStyle : undefined
-          }
+          key={`${numColumns}-${viewMode}`} // Garante atualização do layout ao alternar entre modos
+          columnWrapperStyle={numColumns > 1 ? columnWrapperStyle : undefined} // Aplica somente se numColumns > 1
           contentContainerStyle={{
             padding: Platform.OS === "web" ? 16 : 2,
           }}
@@ -395,7 +397,7 @@ const Vender = () => {
                 <View className="w-10 h-10 rounded-lg">
                   <Image
                     source={
-                      viewMode === "grid" ? icons.view_list : icons.view_grid
+                      viewMode === "grid" ? icons.view_grid : icons.view_list
                     }
                     className="flex-1"
                     contentFit="contain"
@@ -419,20 +421,10 @@ const Vender = () => {
 
       {/* Botão do carrinho */}
       <TouchableOpacity
-        className="absolute bottom-24 right-8 w-14 h-14 bg-green-500 rounded-full items-center justify-center"
+        className="absolute bottom-8 right-8 w-14 h-14 bg-green-500 rounded-full items-center justify-center"
         onPress={() => router.push("/screens/Cart")}
       >
         <Text className="text-white font-bold">{cartCount}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => {
-          animateButton();
-          router.push("/criar");
-        }}
-        className="absolute right-8 bottom-8 w-14 h-14 bg-secundaria-500 rounded-full items-center justify-center"
-      >
-        <Text className="text-white text-3xl">+</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
