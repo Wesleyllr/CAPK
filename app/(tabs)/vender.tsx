@@ -29,6 +29,7 @@ import { useNavigation } from "@react-navigation/native";
 import { getColor } from "@/colors";
 import CardProdutoSimples from "@/components/CardProdutoSimples";
 import eventBus from "@/utils/eventBus";
+import TouchableWithSound from "@/components/TouchableWithSound";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5;
@@ -449,12 +450,13 @@ const Vender = () => {
       </View>
 
       {/* Botão para limpar os itens selecionados (lado esquerdo) */}
-      <TouchableOpacity
+      <TouchableWithSound
         className="absolute bottom-24 right-8 w-14 h-14 bg-red-500 rounded-full items-center justify-center"
         onPress={handleClearSelectedItems}
+        soundType="click2"
       >
-        <Text className="text-white font-bold">Limpar</Text>
-      </TouchableOpacity>
+        <Text className="text-white font-bold text-sm ">Limpar</Text>
+      </TouchableWithSound>
 
       {/* Botão do carrinho (lado direito) */}
       <TouchableOpacity

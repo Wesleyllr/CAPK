@@ -123,17 +123,17 @@ const Home = () => {
 
   // Em vender.tsx, junto com os outros useEffects:
   useEffect(() => {
-    const handlePedidoCriado = () => {
+    const handlePedidoAtualizado = () => {
       // Recarrega os produtos
       onRefresh();
     };
 
     // Adiciona o listener
-    eventBus.on("pedidoCriado", handlePedidoCriado);
+    eventBus.on("pedidoAtualizado", handlePedidoAtualizado);
 
     // Cleanup quando o componente for desmontado
     return () => {
-      eventBus.off("pedidoCriado", handlePedidoCriado);
+      eventBus.off("pedidoAtualizado", handlePedidoAtualizado);
     };
   }, []);
 
@@ -314,9 +314,9 @@ const Home = () => {
             Pedidos Pendentes
           </Text>
           {pendingOrders.length > 0 ? (
-            pendingOrders.map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))
+            pendingOrders
+              .sort((a, b) => b.createdAt.seconds - a.createdAt.seconds) // Ordena em ordem decrescente
+              .map((order) => <OrderCard key={order.id} order={order} />)
           ) : (
             <Text className="text-quinta text-center p-4">
               Nenhum pedido pendente

@@ -16,6 +16,7 @@ import CardProduto1 from "@/components/CardProduto1";
 import CardProdutoSimples from "@/components/CardProdutoSimples";
 import Header from "@/components/CustomHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import ModalProduto from "@/components/ModalProduto";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
@@ -28,6 +29,9 @@ const Produtos = () => {
   const [viewMode, setViewMode] = useState("grid"); // "grid" ou "list"
   const router = useRouter();
   const { width } = useWindowDimensions();
+
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const getNumColumns = () => {
     if (viewMode === "list") return 1;
@@ -150,6 +154,16 @@ const Produtos = () => {
     });
   };
 
+  const handleProductPress = (product) => {
+    setSelectedProduct(product);
+    setIsModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+    setSelectedProduct(null);
+  };
+
   const renderProduct = ({ item, index }) => {
     if (viewMode === "list") {
       return (
@@ -159,7 +173,7 @@ const Produtos = () => {
             price={item.value}
             imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
             backgroundColor={item.backgroundColor}
-            onPress={() => handleEditProduct(item)}
+            onPress={() => handleProductPress(item)}
           />
         </View>
       );
@@ -177,7 +191,7 @@ const Produtos = () => {
           price={item.value}
           imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
           backgroundColor={item.backgroundColor}
-          onPress={() => handleEditProduct(item)}
+          onPress={() => handleProductPress(item)}
         />
       </View>
     );
@@ -224,6 +238,15 @@ const Produtos = () => {
             {loading ? "Carregando..." : "Nenhum produto encontrado."}
           </Text>
         )}
+      />
+      <ModalProduto
+        isVisible={isModalVisible}
+        produto={selectedProduct}
+        onClose={handleCloseModal}
+        onEdit={() => {
+          handleCloseModal();
+          handleEditProduct(selectedProduct);
+        }}
       />
     </SafeAreaView>
   );

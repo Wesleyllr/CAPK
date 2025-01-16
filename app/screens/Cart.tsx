@@ -98,7 +98,7 @@ export default function Cart() {
       cartEvents.emit("cartCleared");
       const statusText = status === "completed" ? "finalizado" : "em aberto";
       Alert.alert("Sucesso", `Pedido #${orderId} ${statusText}!`);
-      eventBus.emit("pedidoCriado");
+      eventBus.emit("pedidoAtualizado");
 
       router.back();
     } catch (error) {

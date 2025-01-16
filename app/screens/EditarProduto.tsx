@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Image } from "expo-image";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
 import FormFieldProduct from "@/components/FormFieldProduct";
 import CategoryDropdown from "@/components/CategoryDropdown";
@@ -18,12 +18,14 @@ import Header from "@/components/CustomHeader";
 import ColorSelector from "@/components/ColorSelector";
 import { pickImagem } from "@/scripts/selecionarImagem";
 import { uploadProductImage } from "@/scripts/uploadImage";
+import TouchableWithSound from "@/components/TouchableWithSound";
 
 const EditarProduto = () => {
   const router = useRouter();
   const { productId } = useLocalSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [productData, setProductData] = useState({
     title: "",
     description: "",
@@ -65,7 +67,6 @@ const EditarProduto = () => {
             codeBar: data.codeBar || "",
             backgroundColor: data.backgroundColor || null,
           });
-          console.log(data.value);
         }
       } catch (error) {
         Alert.alert("Erro", "Falha ao carregar dados do produto.");
@@ -96,6 +97,41 @@ const EditarProduto = () => {
     }));
   };
 
+  const handleDeleteProduct = () => {
+    Alert.alert(
+      "Excluir Produto",
+      "Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: confirmDelete },
+      ]
+    );
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error("Usuário não autenticado");
+
+      const productRef = doc(
+        db,
+        "users",
+        userId,
+        "products",
+        productId.toString()
+      );
+      await deleteDoc(productRef);
+
+      Alert.alert("Sucesso", "Produto excluído com sucesso!");
+      router.back();
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao excluir produto.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleSaveProduct = async () => {
     try {
       setIsSaving(true);
@@ -107,7 +143,6 @@ const EditarProduto = () => {
         finalImageUrl = await uploadProductImage(productData.imageUrl);
       }
 
-      // Divide o valor por 100 antes de salvar no Firestore
       const finalValue = parseFloat(productData.value) / 100;
       const finalCusto = parseFloat(productData.custo || "0") / 100;
 
@@ -151,131 +186,177 @@ const EditarProduto = () => {
       <Header
         title="Editar Produto"
         onGoBack={() => router.back()}
-        onSave={handleSaveProduct}
-        showSaveIcon={true}
+        showSaveIcon={false}
       />
 
       <ScrollView className="flex-1 bg-primaria">
-        <FormFieldProduct
-          title="Nome do Produto"
-          value={productData.title}
-          handleChangeText={(text) =>
-            setProductData((prev) => ({ ...prev, title: text }))
-          }
-          otherStyles="px-4"
-          placeholder="Nome do produto"
-        />
-
-        <FormFieldProduct
-          title="Descrição"
-          value={productData.description}
-          handleChangeText={(text) =>
-            setProductData((prev) => ({ ...prev, description: text }))
-          }
-          otherStyles="px-4"
-          placeholder="Descrição do produto"
-          multiline={true}
-        />
-
-        <View className="w-full flex-row my-4">
-          <FormFieldProduct
-            title="Preço de Venda"
-            value={productData.value}
-            handleChangeText={(text) => {
-              const rawValue = text.replace(/\D/g, "");
-              setProductData((prev) => ({ ...prev, value: rawValue }));
-            }}
-            placeholder="Preço de Venda"
-            otherStyles="px-4 flex-1"
-            monetario={true}
-          />
-
-          <FormFieldProduct
-            title="Custo"
-            value={productData.custo}
-            handleChangeText={(text) => {
-              const rawValue = text.replace(/\D/g, "");
-              setProductData((prev) => ({ ...prev, custo: rawValue }));
-            }}
-            placeholder="Custo (opcional)"
-            otherStyles="px-4 flex-1"
-            monetario={true}
-          />
-        </View>
-
-        <View className="flex-1 h-16 my-2">
-          <CategoryDropdown
-            value={productData.category}
-            onChange={(category) =>
-              setProductData((prev) => ({ ...prev, category }))
-            }
-          />
-        </View>
-
-        <FormFieldProduct
-          title="Código de barras"
-          value={productData.codeBar}
-          handleChangeText={(text) =>
-            setProductData((prev) => ({ ...prev, codeBar: text }))
-          }
-          placeholder="Código de barras"
-          otherStyles="px-4"
-        />
-
-        <View className="w-full h-40 mt-2 justify-center items-center flex-row px-4 gap-2">
-          <View className="w-36 h-36 rounded-xl bg-secundaria-300 justify-center items-center">
-            {productData.imageUrl ? (
-              <TouchableOpacity
-                onPress={() =>
-                  setProductData((prev) => ({
-                    ...prev,
-                    imageUrl: "",
-                    backgroundColor: null,
-                  }))
-                }
-                className="w-full h-full"
-              >
-                <Image
-                  source={{ uri: productData.imageUrl }}
-                  className="w-full h-full rounded-xl"
-                  contentFit="contain"
-                />
-                <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
-                  <Text className="text-white text-xs">X</Text>
-                </View>
-              </TouchableOpacity>
-            ) : productData.backgroundColor ? (
-              <TouchableOpacity
-                onPress={() =>
-                  setProductData((prev) => ({ ...prev, backgroundColor: null }))
-                }
-                className="w-full h-full"
-              >
-                <View
-                  className="w-full h-full rounded-xl"
-                  style={{ backgroundColor: productData.backgroundColor }}
-                />
-                <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
-                  <Text className="text-white text-xs">X</Text>
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={handleSelectImage}
-                className="bg-black w-full h-full rounded-xl justify-center"
-              >
-                <Text className="text-white text-center">
-                  Selecione uma imagem ou cor
+        <View className="p-4 bg-white rounded-lg mx-4 mt-4 shadow-sm">
+          {/* Seção de Imagem e Cor */}
+          <View className="mb-6">
+            <Text className="text-lg font-bold mb-3 text-secundaria-900">
+              Imagem do Produto
+            </Text>
+            <View className="flex-row gap-2">
+              <View className="w-36 h-36 rounded-xl bg-secundaria-100 shadow-sm">
+                {productData.imageUrl ? (
+                  <TouchableOpacity
+                    onPress={() =>
+                      setProductData((prev) => ({
+                        ...prev,
+                        imageUrl: "",
+                        backgroundColor: null,
+                      }))
+                    }
+                    className="w-full h-full"
+                  >
+                    <Image
+                      source={{ uri: productData.imageUrl }}
+                      className="w-full h-full rounded-xl"
+                      contentFit="contain"
+                    />
+                    <View className="absolute top-2 right-2 bg-black/50 rounded-full p-2">
+                      <Text className="text-white text-xs">✕</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : productData.backgroundColor ? (
+                  <TouchableOpacity
+                    onPress={() =>
+                      setProductData((prev) => ({
+                        ...prev,
+                        backgroundColor: null,
+                      }))
+                    }
+                    className="w-full h-full"
+                  >
+                    <View
+                      className="w-full h-full rounded-xl"
+                      style={{ backgroundColor: productData.backgroundColor }}
+                    />
+                    <View className="absolute top-2 right-2 bg-black/50 rounded-full p-2">
+                      <Text className="text-white text-xs">✕</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={handleSelectImage}
+                    className="w-full h-full rounded-xl justify-center items-center border-2 border-dashed border-secundaria-300"
+                  >
+                    <Text className="text-secundaria-600 text-center px-2">
+                      Toque para adicionar imagem
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View className="flex-1 bg-secundaria-100 rounded-xl p-2">
+                <Text className="text-sm font-semibold mb-2 text-secundaria-900">
+                  Ou selecione uma cor
                 </Text>
-              </TouchableOpacity>
-            )}
+                <ColorSelector
+                  selectedColor={productData.backgroundColor}
+                  onColorSelect={handleColorSelect}
+                />
+              </View>
+            </View>
           </View>
-          <View className="flex-1 h-36 bg-secundaria-300 border border-secundaria-700 rounded-xl justify-center">
-            <ColorSelector
-              selectedColor={productData.backgroundColor}
-              onColorSelect={handleColorSelect}
+
+          {/* Informações Básicas */}
+          <View className="space-y-4">
+            <FormFieldProduct
+              title="Nome do Produto"
+              value={productData.title}
+              handleChangeText={(text) =>
+                setProductData((prev) => ({ ...prev, title: text }))
+              }
+              placeholder="Nome do produto"
+            />
+
+            <FormFieldProduct
+              title="Descrição"
+              value={productData.description}
+              handleChangeText={(text) =>
+                setProductData((prev) => ({ ...prev, description: text }))
+              }
+              placeholder="Descrição do produto"
+              multiline={true}
+            />
+
+            <View className="flex-row gap-4">
+              <View className="flex-1">
+                <FormFieldProduct
+                  title="Preço de Venda"
+                  value={productData.value}
+                  handleChangeText={(text) => {
+                    const rawValue = text.replace(/\D/g, "");
+                    setProductData((prev) => ({ ...prev, value: rawValue }));
+                  }}
+                  placeholder="Preço de Venda"
+                  monetario={true}
+                />
+              </View>
+              <View className="flex-1">
+                <FormFieldProduct
+                  title="Custo"
+                  value={productData.custo}
+                  handleChangeText={(text) => {
+                    const rawValue = text.replace(/\D/g, "");
+                    setProductData((prev) => ({ ...prev, custo: rawValue }));
+                  }}
+                  placeholder="Custo (opcional)"
+                  monetario={true}
+                />
+              </View>
+            </View>
+
+            <View className="h-16">
+              <CategoryDropdown
+                value={productData.category}
+                onChange={(category) =>
+                  setProductData((prev) => ({ ...prev, category }))
+                }
+              />
+            </View>
+
+            <FormFieldProduct
+              title="Código de barras"
+              value={productData.codeBar}
+              handleChangeText={(text) =>
+                setProductData((prev) => ({ ...prev, codeBar: text }))
+              }
+              placeholder="Código de barras"
             />
           </View>
+        </View>
+
+        {/* Botões de Excluir e Salvar */}
+        <View className="flex-1 flex-row justify-between mx-4 mt-4 mb-8 gap-4">
+          <TouchableWithSound
+            onPress={handleDeleteProduct}
+            className="flex-1 p-4 bg-red-500 rounded-lg"
+            disabled={isDeleting}
+            soundType="click2"
+          >
+            {isDeleting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-center font-bold">
+                Excluir Produto
+              </Text>
+            )}
+          </TouchableWithSound>
+
+          <TouchableWithSound
+            onPress={handleSaveProduct}
+            className="flex-1 p-4 bg-green-500 rounded-lg"
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-center font-bold">
+                Salvar Produto
+              </Text>
+            )}
+          </TouchableWithSound>
         </View>
 
         {isSaving && <ActivityIndicator size="large" className="my-4" />}

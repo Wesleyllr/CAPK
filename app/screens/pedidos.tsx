@@ -15,6 +15,7 @@ import { OrderStatus } from "@/types/types";
 import { useOrders } from "@/hooks/useOrders";
 import OrderCard from "@/components/OrderCard";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
+import eventBus from "@/utils/eventBus";
 
 export default function Pedidos() {
   const [showPending, setShowPending] = useState(true);
@@ -56,14 +57,7 @@ export default function Pedidos() {
 
           // Atualizar a lista de pedidos
           await fetchOrders();
-
-          // Mostrar mensagem apropriada
-          Alert.alert(
-            "Sucesso",
-            newStatus === "completed"
-              ? "Pedido finalizado com sucesso"
-              : "Pedido cancelado com sucesso"
-          );
+          eventBus.emit("pedidoAtualizado");
         } catch (error) {
           console.error("Erro na atualização:", error);
           Alert.alert(

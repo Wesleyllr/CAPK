@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import { Image } from "expo-image";
+import TouchableWithSound from "./TouchableWithSound";
 
 interface IQuantityControlProps {
   quantity: number;
@@ -30,12 +31,12 @@ const QuantityControl: React.FC<IQuantityControlProps> = ({
 
   return (
     <View className="flex-row items-center gap-2">
-      <TouchableOpacity
+      <TouchableWithSound
         onPress={onDecrease}
         className="w-6 h-6 bg-secundaria-200 rounded-full items-center justify-center"
       >
         <Text>-</Text>
-      </TouchableOpacity>
+      </TouchableWithSound>
 
       {isEditing ? (
         <TextInput
@@ -55,12 +56,12 @@ const QuantityControl: React.FC<IQuantityControlProps> = ({
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity
+      <TouchableWithSound
         onPress={onIncrease}
         className="w-6 h-6 bg-secundaria-500 rounded-full items-center justify-center"
       >
         <Text className="text-white">+</Text>
-      </TouchableOpacity>
+      </TouchableWithSound>
     </View>
   );
 };
@@ -112,12 +113,13 @@ export const CartItem: React.FC<CartItemProps> = ({
             onQuantityChange={(value) => onUpdateQuantity(item.id, value)}
           />
 
-          <TouchableOpacity
+          <TouchableWithSound
             onPress={() => onRemove(item.id)}
             className="ml-auto"
+            soundType="click2"
           >
             <Text className="text-sexta font-medium">Remover</Text>
-          </TouchableOpacity>
+          </TouchableWithSound>
         </View>
 
         <TextInput

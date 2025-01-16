@@ -43,6 +43,16 @@ const Header: React.FC<HeaderProps> = ({
           </Text>
         </TouchableOpacity>
       )}
+      {showSaveIcon && onSave && (
+        <TouchableOpacity onPress={onSave}>
+          <Image
+            source={icons.save} // Certifique-se de que o ícone 'save' está no seu arquivo de ícones
+            resizeMode="contain"
+            className="w-12 h-12 mr-2"
+            tintColor="#085072"
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
