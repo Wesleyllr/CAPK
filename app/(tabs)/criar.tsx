@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import ColorSelector from "@/components/ColorSelector";
 import { db, auth } from "@/firebaseConfig";
 import { Timestamp } from "firebase/firestore";
+import eventBus from "@/utils/eventBus";
 
 const Criar = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -97,6 +98,7 @@ const Criar = () => {
       );
 
       Alert.alert("Sucesso", "Produto adicionado com sucesso!");
+      eventBus.emit("productCreated");
 
       // Limpar campos
       setProductName("");

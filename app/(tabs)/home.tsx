@@ -22,6 +22,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { images } from "@/constants";
 import { getUserInfo } from "@/userService"; // Importando o serviço para obter o username
+import eventBus from "@/utils/eventBus";
+import OrderDetailsModal from "@/components/OrderDetailsModal";
+import { IOrder } from "@/types/types";
 
 const Home = () => {
   const router = useRouter();
@@ -37,6 +40,18 @@ const Home = () => {
     name: "",
     photoURL: null,
   });
+  const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const handleOrderPress = useCallback((order: IOrder) => {
+    setSelectedOrder(order);
+    setIsModalVisible(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalVisible(false);
+    setSelectedOrder(null);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -106,6 +121,22 @@ const Home = () => {
     fetchData();
   }, [fetchData]);
 
+  // Em vender.tsx, junto com os outros useEffects:
+  useEffect(() => {
+    const handlePedidoCriado = () => {
+      // Recarrega os produtos
+      onRefresh();
+    };
+
+    // Adiciona o listener
+    eventBus.on("pedidoCriado", handlePedidoCriado);
+
+    // Cleanup quando o componente for desmontado
+    return () => {
+      eventBus.off("pedidoCriado", handlePedidoCriado);
+    };
+  }, []);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
@@ -163,7 +194,10 @@ const Home = () => {
     );
 
     return (
-      <View className="bg-secundaria-50 p-4 rounded-lg mb-2">
+      <TouchableOpacity
+        className="bg-secundaria-50 p-4 rounded-lg mb-2"
+        onPress={() => handleOrderPress(order)}
+      >
         <View className="flex-row justify-between mb-2">
           <Text className="flex-1 text-secundaria-900 font-bold">
             Pedido #{order.id.slice(-6)}
@@ -187,7 +221,7 @@ const Home = () => {
             </Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -289,6 +323,11 @@ const Home = () => {
             </Text>
           )}
         </View>
+        <OrderDetailsModal
+          isVisible={isModalVisible}
+          order={selectedOrder}
+          onClose={handleCloseModal}
+        />
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,7 +1,71 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import { Image } from "expo-image";
 
+interface IQuantityControlProps {
+  quantity: number;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  onQuantityChange: (value: number) => void;
+}
+
+const QuantityControl: React.FC<IQuantityControlProps> = ({
+  quantity,
+  onDecrease,
+  onIncrease,
+  onQuantityChange,
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(quantity.toString());
+
+  const handleSubmit = () => {
+    const newValue = parseInt(inputValue);
+    if (!isNaN(newValue) && newValue >= 0) {
+      onQuantityChange(newValue); // Atualiza a quantidade
+    } else {
+      setInputValue(quantity.toString()); // Restaura o valor
+    }
+    setIsEditing(false); // Finaliza a edição
+  };
+
+  return (
+    <View className="flex-row items-center gap-2">
+      <TouchableOpacity
+        onPress={onDecrease}
+        className="w-6 h-6 bg-secundaria-200 rounded-full items-center justify-center"
+      >
+        <Text>-</Text>
+      </TouchableOpacity>
+
+      {isEditing ? (
+        <TextInput
+          className="w-12 text-center bg-secundaria-100 rounded px-1"
+          keyboardType="numeric"
+          value={inputValue}
+          onChangeText={setInputValue}
+          onBlur={handleSubmit}
+          onSubmitEditing={handleSubmit}
+          autoFocus
+        />
+      ) : (
+        <TouchableOpacity onPress={() => setIsEditing(true)}>
+          <Text className="text-sm font-medium min-w-8 text-center">
+            {quantity}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      <TouchableOpacity
+        onPress={onIncrease}
+        className="w-6 h-6 bg-secundaria-500 rounded-full items-center justify-center"
+      >
+        <Text className="text-white">+</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+// Componente CartItem
 interface CartItemProps {
   item: ICartItem;
   onUpdateQuantity: (id: string, quantity: number) => void;
@@ -39,25 +103,14 @@ export const CartItem: React.FC<CartItemProps> = ({
         </Text>
 
         <View className="flex-row items-center mt-2">
-          <TouchableOpacity
-            onPress={() =>
+          <QuantityControl
+            quantity={item.quantity}
+            onDecrease={() =>
               onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))
             }
-            className="w-8 h-8 bg-secundaria-200 rounded-full items-center justify-center"
-          >
-            <Text className="text-lg text-secundaria-700">-</Text>
-          </TouchableOpacity>
-
-          <Text className="mx-4 text-lg font-medium text-secundaria-900">
-            {item.quantity}
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => onUpdateQuantity(item.id, item.quantity + 1)}
-            className="w-8 h-8 bg-secundaria-500 rounded-full items-center justify-center"
-          >
-            <Text className="text-lg text-primaria">+</Text>
-          </TouchableOpacity>
+            onIncrease={() => onUpdateQuantity(item.id, item.quantity + 1)}
+            onQuantityChange={(value) => onUpdateQuantity(item.id, value)}
+          />
 
           <TouchableOpacity
             onPress={() => onRemove(item.id)}

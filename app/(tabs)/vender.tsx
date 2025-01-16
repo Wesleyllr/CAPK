@@ -28,6 +28,7 @@ import { CartService } from "@/services/CartService";
 import { useNavigation } from "@react-navigation/native";
 import { getColor } from "@/colors";
 import CardProdutoSimples from "@/components/CardProdutoSimples";
+import eventBus from "@/utils/eventBus";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5;
@@ -69,6 +70,21 @@ const Vender = () => {
   }, []);
 
   useEffect(() => {
+    const handleProductCreated = () => {
+      // Recarrega os produtos
+      handleRefresh();
+    };
+
+    // Adiciona o listener
+    eventBus.on("productCreated", handleProductCreated);
+
+    // Cleanup quando o componente for desmontado
+    return () => {
+      eventBus.off("productCreated", handleProductCreated);
+    };
+  }, []);
+
+  useEffect(() => {
     // Listener para limpar as quantidades selecionadas quando o carrinho for limpo
     const handleCartCleared = () => {
       setSelectedQuantities({});
@@ -81,6 +97,19 @@ const Vender = () => {
       cartEvents.off("cartCleared", handleCartCleared);
     };
   }, []);
+
+  const handleClearSelectedItems = async () => {
+    try {
+      // Limpa as quantidades selecionadas
+      setSelectedQuantities({});
+      // Limpa o carrinho
+      await CartService.clearCart();
+      setCartCount(0); // Atualiza a contagem do carrinho
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao limpar itens selecionados.");
+    }
+  };
+
   const getNumColumns = () => {
     if (Platform.OS === "web") {
       if (viewMode === "list") return 2; // Exibe 2 colunas para "list" na web
@@ -419,7 +448,15 @@ const Vender = () => {
         />
       </View>
 
-      {/* Botão do carrinho */}
+      {/* Botão para limpar os itens selecionados (lado esquerdo) */}
+      <TouchableOpacity
+        className="absolute bottom-24 right-8 w-14 h-14 bg-red-500 rounded-full items-center justify-center"
+        onPress={handleClearSelectedItems}
+      >
+        <Text className="text-white font-bold">Limpar</Text>
+      </TouchableOpacity>
+
+      {/* Botão do carrinho (lado direito) */}
       <TouchableOpacity
         className="absolute bottom-8 right-8 w-14 h-14 bg-green-500 rounded-full items-center justify-center"
         onPress={() => router.push("/screens/Cart")}

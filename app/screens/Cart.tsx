@@ -10,6 +10,7 @@ import { CompactCartItem } from "@/components/CompactCartItem";
 import Header from "@/components/CustomHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import EventEmitter from "eventemitter3";
+import eventBus from "@/utils/eventBus";
 
 // Criar uma instância global do EventEmitter
 export const cartEvents = new EventEmitter();
@@ -97,6 +98,8 @@ export default function Cart() {
       cartEvents.emit("cartCleared");
       const statusText = status === "completed" ? "finalizado" : "em aberto";
       Alert.alert("Sucesso", `Pedido #${orderId} ${statusText}!`);
+      eventBus.emit("pedidoCriado");
+
       router.back();
     } catch (error) {
       Alert.alert("Erro", error.message || error);
