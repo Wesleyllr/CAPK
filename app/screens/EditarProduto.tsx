@@ -19,6 +19,8 @@ import ColorSelector from "@/components/ColorSelector";
 import { pickImagem } from "@/scripts/selecionarImagem";
 import { uploadProductImage } from "@/scripts/uploadImage";
 import TouchableWithSound from "@/components/TouchableWithSound";
+import eventBus from "@/utils/eventBus";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
 const EditarProduto = () => {
   const router = useRouter();
@@ -37,12 +39,27 @@ const EditarProduto = () => {
     backgroundColor: null,
   });
 
+  const [initialProductData, setInitialProductData] = useState({
+    title: "",
+    description: "",
+    value: "",
+    custo: "",
+    category: "",
+    imageUrl: "",
+    codeBar: "",
+    backgroundColor: null,
+  });
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const userId = auth.currentUser?.uid;
         if (!userId || !productId) {
-          Alert.alert("Erro", "Não foi possível carregar o produto.");
+          alertaPersonalizado({
+            message: "Erro",
+            description: "Usuário ou produto não encontrado.",
+            type: "danger",
+          });
           return;
         }
 
@@ -67,9 +84,25 @@ const EditarProduto = () => {
             codeBar: data.codeBar || "",
             backgroundColor: data.backgroundColor || null,
           });
+
+          // Armazenando os dados iniciais para comparação
+          setInitialProductData({
+            title: data.title || "",
+            description: data.description || "",
+            value: (data.value * 100).toString() || "",
+            custo: (data.custo * 100).toString() || "",
+            category: data.category || "",
+            imageUrl: data.imageUrl || "",
+            codeBar: data.codeBar || "",
+            backgroundColor: data.backgroundColor || null,
+          });
         }
       } catch (error) {
-        Alert.alert("Erro", "Falha ao carregar dados do produto.");
+        alertaPersonalizado({
+          message: "Erro!",
+          description: "Falha ao carregar dados do produto.",
+          type: "warning",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -103,7 +136,7 @@ const EditarProduto = () => {
       "Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.",
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Excluir", style: "destructive", onPress: confirmDelete },
+        { text: "Excluir", style: "destructive", onPress: gi },
       ]
     );
   };
@@ -122,11 +155,19 @@ const EditarProduto = () => {
         productId.toString()
       );
       await deleteDoc(productRef);
-
-      Alert.alert("Sucesso", "Produto excluído com sucesso!");
+      alertaPersonalizado({
+        message: "Sucesso!",
+        description: "Produto excluído com sucesso.",
+        type: "success",
+      });
+      eventBus.emit("produtoAtualizado");
       router.back();
     } catch (error) {
-      Alert.alert("Erro", "Falha ao excluir produto.");
+      alertaPersonalizado({
+        message: "Erro!",
+        description: "Falha ao excluir produto.",
+        type: "warning",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -137,6 +178,27 @@ const EditarProduto = () => {
       setIsSaving(true);
       const userId = auth.currentUser?.uid;
       if (!userId) throw new Error("Usuário não autenticado");
+
+      // Verificação de modificações
+      const hasChanges =
+        productData.title !== initialProductData.title ||
+        productData.description !== initialProductData.description ||
+        productData.value !== initialProductData.value ||
+        productData.custo !== initialProductData.custo ||
+        productData.category !== initialProductData.category ||
+        productData.imageUrl !== initialProductData.imageUrl ||
+        productData.codeBar !== initialProductData.codeBar ||
+        productData.backgroundColor !== initialProductData.backgroundColor;
+
+      if (!hasChanges) {
+        alertaPersonalizado({
+          message: "Sem modificações",
+          description: "Nenhuma alteração foi feita no produto.",
+          type: "info",
+        });
+
+        return; // Não realiza a atualização
+      }
 
       let finalImageUrl = productData.imageUrl;
       if (productData.imageUrl && !productData.imageUrl.startsWith("http")) {
@@ -164,10 +226,20 @@ const EditarProduto = () => {
         backgroundColor: productData.backgroundColor,
       });
 
-      Alert.alert("Sucesso", "Produto atualizado com sucesso!");
+      alertaPersonalizado({
+        message: "Sucesso!",
+        description: "Produto atualizado com sucesso.",
+        type: "success",
+      });
+
+      eventBus.emit("produtoAtualizado");
       router.back();
     } catch (error) {
-      Alert.alert("Erro", "Falha ao atualizar produto.");
+      alertaPersonalizado({
+        message: "Erro!",
+        description: "Falha ao atualizar produto.",
+        type: "warning",
+      });
     } finally {
       setIsSaving(false);
     }

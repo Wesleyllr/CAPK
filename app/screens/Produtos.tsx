@@ -17,6 +17,8 @@ import CardProdutoSimples from "@/components/CardProdutoSimples";
 import Header from "@/components/CustomHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ModalProduto from "@/components/ModalProduto";
+import eventBus from "@/utils/eventBus";
+import { showMessage } from "react-native-flash-message";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
@@ -75,6 +77,21 @@ const Produtos = () => {
     loadViewMode();
   }, []);
 
+  useEffect(() => {
+    const handleProdutoAtualizado = () => {
+      // Recarrega os produtos
+      handleRefresh();
+    };
+
+    // Adiciona o listener
+    eventBus.on("produtoAtualizado", handleProdutoAtualizado);
+
+    // Cleanup quando o componente for desmontado
+    return () => {
+      eventBus.off("produtoAtualizado", handleProdutoAtualizado);
+    };
+  }, []);
+
   // Salvar preferência de visualização
   const toggleViewMode = async () => {
     const newMode = viewMode === "grid" ? "list" : "grid";
@@ -123,7 +140,10 @@ const Produtos = () => {
       setProducts(userProducts);
       cacheProducts(userProducts);
     } catch (error) {
-      Alert.alert("Erro", "Falha ao carregar produtos.");
+      showMessage({
+        message: "Erro ao carregar produtos.",
+        type: "danger",
+      });
     } finally {
       setLoading(false);
     }

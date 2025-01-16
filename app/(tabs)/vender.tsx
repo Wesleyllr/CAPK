@@ -71,17 +71,17 @@ const Vender = () => {
   }, []);
 
   useEffect(() => {
-    const handleProductCreated = () => {
+    const handleProdutoAtualizado = () => {
       // Recarrega os produtos
       handleRefresh();
     };
 
     // Adiciona o listener
-    eventBus.on("productCreated", handleProductCreated);
+    eventBus.on("produtoAtualizado", handleProdutoAtualizado);
 
     // Cleanup quando o componente for desmontado
     return () => {
-      eventBus.off("productCreated", handleProductCreated);
+      eventBus.off("produtoAtualizado", handleProdutoAtualizado);
     };
   }, []);
 

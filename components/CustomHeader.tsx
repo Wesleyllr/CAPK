@@ -30,7 +30,7 @@ const Header: React.FC<HeaderProps> = ({
           <Image
             source={icons.leftArrow}
             resizeMode="contain"
-            className="w-8 h-8 ml-2"
+            className="w-10 h-10 ml-2"
             tintColor="#085072"
           />
         </TouchableOpacity>

@@ -10,6 +10,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "@/global.css";
 import "react-native-reanimated";
+import FlashMessage from "react-native-flash-message";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 
@@ -52,6 +53,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={colorScheme === "light" ? "dark" : "light"} />
+      <FlashMessage position="bottom" />
     </ThemeProvider>
   );
 }

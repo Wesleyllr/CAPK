@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, Platform } from "react-native";
 import { Image } from "expo-image";
 import TouchableWithSound from "./TouchableWithSound";
+import { getUserCategories } from "@/userService"; // Ajuste o caminho conforme necessário
 
 interface ModalProdutoProps {
   isVisible: boolean;
@@ -25,6 +26,27 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
   onClose,
   onEdit,
 }) => {
+  const [categoryName, setCategoryName] = useState<string>("");
+
+  useEffect(() => {
+    const fetchCategoryName = async () => {
+      if (produto?.category) {
+        try {
+          const categories = await getUserCategories();
+          const category = categories.find(
+            (cat) => cat.id === produto.category
+          );
+          setCategoryName(category?.name || produto.category);
+        } catch (error) {
+          console.error("Erro ao buscar categoria:", error);
+          setCategoryName(produto.category); // Fallback para o valor original
+        }
+      }
+    };
+
+    fetchCategoryName();
+  }, [produto?.category]);
+
   if (!produto) return null;
 
   const formattedPrice = new Intl.NumberFormat("pt-BR", {
@@ -37,12 +59,17 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
     currency: "BRL",
   }).format(produto.custo || 0);
 
+  const handleClose = () => {
+    setCategoryName(""); // Limpa o nome da categoria
+    onClose(); // Chama a função original de fechar
+  };
+
   return (
     <Modal
       visible={isVisible}
       transparent={true}
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View className="flex-1 bg-black/50 justify-center items-center p-4">
         <View className="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
@@ -81,12 +108,9 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
 
             {produto.category && (
               <View className="bg-gray-100 self-start px-3 py-1 rounded-full mb-4">
-                <Text className="text-sm text-gray-600">
-                  {produto.category}
-                </Text>
+                <Text className="text-sm text-gray-600">{categoryName}</Text>
               </View>
             )}
-
             {produto.description && (
               <Text className="text-gray-600 mb-6">{produto.description}</Text>
             )}
@@ -101,7 +125,7 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
               </TouchableWithSound>
 
               <TouchableWithSound
-                onPress={onClose}
+                onPress={handleClose}
                 className="flex-1 bg-gray-200 py-3 rounded-lg"
                 soundType="click2"
               >
