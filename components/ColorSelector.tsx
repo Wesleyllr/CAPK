@@ -19,8 +19,8 @@ const ColorSelector = ({
   ];
 
   const handleColorSelect = (color) => {
-    if (!disabled) {
-      setSelectedColor(color);
+    if (!disabled && setSelectedColor) {
+      setSelectedColor(color); // Verifica se setSelectedColor é uma função antes de chamá-la
       onColorSelect?.(color); // Chama o callback se existir
     }
   };
@@ -54,5 +54,6 @@ const ColorSelector = ({
     </View>
   );
 };
+
 
 export default ColorSelector;

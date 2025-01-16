@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { signOut } from "firebase/auth";
@@ -51,11 +52,9 @@ const Perfil = () => {
       const photoURL = auth.currentUser?.photoURL;
       const createdAt = auth.currentUser?.metadata.creationTime;
 
-      // Buscar total de produtos
       const productsQuery = query(collection(db, "orders", userId, "vendas"));
       const productsSnapshot = await getDocs(productsQuery);
 
-      // Buscar vendas recentes
       const salesQuery = query(
         collection(db, "orders", userId, "vendas"),
         where("status", "==", "completed")
@@ -90,7 +89,23 @@ const Perfil = () => {
     loadUserInfo();
   };
 
+  const performLogout = async () => {
+    try {
+      await signOut(auth);
+      router.replace("/login");
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao realizar logout");
+    }
+  };
+
   const handleLogout = async () => {
+    // Skip confirmation for web version
+    if (Platform.OS === 'web') {
+      performLogout();
+      return;
+    }
+
+    // Show confirmation dialog for mobile versions
     if (hasUnsavedChanges) {
       Alert.alert(
         "Alterações não salvas",
@@ -102,22 +117,13 @@ const Perfil = () => {
       );
     } else {
       Alert.alert(
-      "Sair",
-      "Deseja realmente sair?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Sair", style: "destructive", onPress: performLogout },
-      ]
-    );
-    }
-  };
-
-  const performLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/login");
-    } catch (error) {
-      Alert.alert("Erro", "Falha ao realizar logout");
+        "Sair",
+        "Deseja realmente sair?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Sair", style: "destructive", onPress: performLogout },
+        ]
+      );
     }
   };
 

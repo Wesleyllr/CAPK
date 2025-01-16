@@ -7,6 +7,7 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -143,7 +144,7 @@ const Home = () => {
   };
 
   const StatCard = ({ title, value }) => (
-    <View className="bg-secundaria-50 p-3 rounded-lg flex-1 mx-1">
+    <View className="bg-secundaria-50 p-3 rounded-lg mx-1">
       <Text className="text-quinta text-sm ">{title}</Text>
       <Text className="text-secundaria-900 text-lg font-bold">
         {new Intl.NumberFormat("pt-BR", {
@@ -282,6 +283,20 @@ const Home = () => {
           <View className="flex-row justify-start">
             <QuickAction
               icon={
+                <Ionicons name="basket-outline" size={20} color="#7f5d5a" />
+              }
+              title="Vender"
+              onPress={() => {
+                // Alteração para verificar a plataforma
+                if (Platform.OS === 'web') {
+                  router.push("/screens/CriarWeb");
+                } else {
+                  router.push("/criar");
+                }
+              }}
+            />
+            <QuickAction
+              icon={
                 <Ionicons name="storefront-outline" size={20} color="#7f5d5a" />
               }
               title="Produtos"
@@ -299,13 +314,6 @@ const Home = () => {
               }
               title="Histórico"
               onPress={() => router.push("/dashboard")}
-            />
-            <QuickAction
-              icon={
-                <Ionicons name="settings-outline" size={20} color="#7f5d5a" />
-              }
-              title="Configurações"
-              onPress={() => router.push("/config")}
             />
           </View>
         </View>

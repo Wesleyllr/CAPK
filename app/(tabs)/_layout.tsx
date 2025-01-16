@@ -1,4 +1,4 @@
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, Platform } from "react-native";
 import { Tabs } from "expo-router";
 import { icons } from "../../constants";
 import { Icon } from "react-native-elements";
@@ -30,6 +30,8 @@ const TabIcon = ({ icon, color, name, focused }: TabIconProps) => {
 };
 
 const TabsLayout = () => {
+  const isWeb = Platform.OS === 'web';
+
   return (
     <Tabs
       screenOptions={{
@@ -41,6 +43,7 @@ const TabsLayout = () => {
           borderTopWidth: 1,
           borderTopColor: "#06324b",
           height: 43,
+          display: isWeb ? 'none' : 'flex',
         },
       }}
     >

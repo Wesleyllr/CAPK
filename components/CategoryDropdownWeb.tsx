@@ -17,7 +17,8 @@ import CustomButton from "./CustomButton";
 import { icons } from "@/constants";
 import BotaoComIcone from "./BotaoComIcone";
 
-const CategoryDropdown = ({ value: selectedValue, onChange }) => {
+
+const CategoryDropdownWeb = ({ value: selectedValue, onChange }) => {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<string | null>(selectedValue);
   const [items, setItems] = useState([]);
@@ -94,7 +95,7 @@ const CategoryDropdown = ({ value: selectedValue, onChange }) => {
   }
 
   return (
-    <View className="flex-1 justify-center items-center px-4 relative">
+    <View className="flex-1 justify-center items-center px-4 relative" style={{ zIndex: 9999 }}>
       <DropDownPicker
         listMode="SCROLLVIEW"
         open={open}
@@ -108,18 +109,19 @@ const CategoryDropdown = ({ value: selectedValue, onChange }) => {
         dropDownContainerStyle={{
           backgroundColor: "#f9fafb",
           borderColor: "#d1d5db",
-          position: "absolute",
-          top: "100%",
-          zIndex: 1000,
+          position: "relative",  // Changed from absolute to relative
+          zIndex: 9999,
           width: "100%",
         }}
         style={{
           position: "relative",
-          zIndex: 999,
+          zIndex: 9999,
         }}
         containerStyle={{
           position: "relative",
-          zIndex: 998,
+          zIndex: 9999,
+          minHeight: 40,
+          width: "100%"
         }}
         textStyle={{ fontSize: 16, fontWeight: "600", color: "#374151" }}
         onSelectItem={({ value }) => handleItemSelect(value)}
@@ -159,4 +161,4 @@ const CategoryDropdown = ({ value: selectedValue, onChange }) => {
   );
 };
 
-export default CategoryDropdown;
+export default CategoryDropdownWeb;
