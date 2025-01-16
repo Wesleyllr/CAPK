@@ -285,7 +285,7 @@ const Home = () => {
               icon={
                 <Ionicons name="basket-outline" size={20} color="#7f5d5a" />
               }
-              title="Vender"
+              title="Criar"
               onPress={() => {
                 // Alteração para verificar a plataforma
                 if (Platform.OS === 'web') {

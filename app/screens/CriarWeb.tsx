@@ -57,19 +57,19 @@ const CriarWeb = () => {
       Alert.alert("Erro", "Informe o nome do produto e selecione uma categoria.");
       return;
     }
-
+  
     setIsUploading(true);
     try {
       const user = auth.currentUser;
       if (!user) throw new Error("Usuário não autenticado");
-
+  
       let finalImageUrl = productData.imageUrl
         ? await uploadProductImage(productData.imageUrl)
         : "";
-
+  
       const finalValue = parseFloat(productData.value) / 100;
       const finalCusto = parseFloat(productData.custo || "0") / 100;
-
+  
       await addProduct(
         productData.title,
         productData.description,
@@ -81,10 +81,24 @@ const CriarWeb = () => {
         productData.codeBar,
         productData.backgroundColor
       );
-
+  
+      // Mensagem de sucesso
       Alert.alert("Sucesso", "Produto adicionado com sucesso!");
+  
+      // Limpando os campos
+      setProductData({
+        title: "",
+        description: "",
+        value: "",
+        custo: "",
+        category: "",
+        imageUrl: "",
+        codeBar: "",
+        backgroundColor: null,
+      });
+  
+      // Emitindo evento para atualizar a lista
       eventBus.emit("produtoAtualizado");
-      router.back();
     } catch (error) {
       console.error("Erro ao adicionar produto:", error);
       Alert.alert("Erro", "Falha ao adicionar o produto.");
@@ -92,6 +106,7 @@ const CriarWeb = () => {
       setIsUploading(false);
     }
   };
+  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f8f8f8' }}>
