@@ -1,21 +1,23 @@
-import React, { useState } from "react";
-import { Alert, View, Text, TouchableOpacity, TextInput } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Alert, View, Text, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { uploadProductImage } from "@/scripts/uploadImage";
-import { addProduct } from "@/scripts/productService";
-import { pickImagem } from "@/scripts/selecionarImagem";
-import FormFieldProduct from "@/components/FormFieldProduct";
-import Header from "@/components/CustomHeader";
-import { useRouter } from "expo-router";
-import ColorSelector from "@/components/ColorSelector";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
-import { Timestamp } from "firebase/firestore";
-import eventBus from "@/utils/eventBus";
+import FormFieldProduct from "@/components/FormFieldProduct";
 import CategoryDropdownWeb from "@/components/CategoryDropdownWeb";
+import { pickImagem } from "@/scripts/selecionarImagem";
+import { uploadProductImage } from "@/scripts/uploadImage";
+import ColorSelector from "@/components/ColorSelector";
+import eventBus from "@/utils/eventBus";
 
-const CriarWeb = () => {
-  const [isUploading, setIsUploading] = useState(false);
+const EditarProdutoWeb = () => {
+  const router = useRouter();
+  const { productId } = useLocalSearchParams();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [productData, setProductData] = useState({
     title: "",
     description: "",
@@ -27,7 +29,59 @@ const CriarWeb = () => {
     backgroundColor: null,
   });
 
-  const router = useRouter();
+  const [initialProductData, setInitialProductData] = useState({
+    title: "",
+    description: "",
+    value: "",
+    custo: "",
+    category: "",
+    imageUrl: "",
+    codeBar: "",
+    backgroundColor: null,
+  });
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const userId = auth.currentUser?.uid;
+        if (!userId || !productId) {
+          Alert.alert("Erro", "Usuário ou produto não encontrado.");
+          return;
+        }
+
+        const productRef = doc(
+          db,
+          "users",
+          userId,
+          "products",
+          productId.toString()
+        );
+        const productDoc = await getDoc(productRef);
+
+        if (productDoc.exists()) {
+          const data = productDoc.data();
+          const productState = {
+            title: data.title || "",
+            description: data.description || "",
+            value: (data.value * 100).toString() || "",
+            custo: (data.custo * 100).toString() || "",
+            category: data.category || "",
+            imageUrl: data.imageUrl || "",
+            codeBar: data.codeBar || "",
+            backgroundColor: data.backgroundColor || null,
+          };
+          setProductData(productState);
+          setInitialProductData(productState);
+        }
+      } catch (error) {
+        Alert.alert("Erro", "Falha ao carregar dados do produto.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [productId]);
 
   const handleSelectImage = async () => {
     const uri = await pickImagem();
@@ -48,67 +102,108 @@ const CriarWeb = () => {
     }));
   };
 
-  const handleAddProduct = async () => {
-    if (!productData.imageUrl && !productData.backgroundColor) {
-      Alert.alert("Erro", "Selecione uma imagem ou uma cor para o produto.");
-      return;
-    }
-    if (!productData.title || !productData.category) {
-      Alert.alert(
-        "Erro",
-        "Informe o nome do produto e selecione uma categoria."
-      );
-      return;
-    }
+  const handleDeleteProduct = () => {
+    Alert.alert(
+      "Excluir Produto",
+      "Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: confirmDelete },
+      ]
+    );
+  };
 
-    setIsUploading(true);
+  const confirmDelete = async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) throw new Error("Usuário não autenticado");
+      setIsDeleting(true);
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error("Usuário não autenticado");
 
-      let finalImageUrl = productData.imageUrl
-        ? await uploadProductImage(productData.imageUrl)
-        : "";
+      const productRef = doc(
+        db,
+        "users",
+        userId,
+        "products",
+        productId.toString()
+      );
+      await deleteDoc(productRef);
+      Alert.alert("Sucesso", "Produto excluído com sucesso.");
+      eventBus.emit("produtoAtualizado");
+      router.back();
+    } catch (error) {
+      Alert.alert("Erro", "Falha ao excluir produto.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSaveProduct = async () => {
+    try {
+      setIsSaving(true);
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error("Usuário não autenticado");
+
+      const hasChanges =
+        JSON.stringify(productData) !== JSON.stringify(initialProductData);
+
+      if (!hasChanges) {
+        Alert.alert(
+          "Sem modificações",
+          "Nenhuma alteração foi feita no produto."
+        );
+        return;
+      }
+
+      let finalImageUrl = productData.imageUrl;
+      if (productData.imageUrl && !productData.imageUrl.startsWith("http")) {
+        finalImageUrl = await uploadProductImage(productData.imageUrl);
+      }
 
       const finalValue = parseFloat(productData.value) / 100;
       const finalCusto = parseFloat(productData.custo || "0") / 100;
 
-      await addProduct(
-        productData.title,
-        productData.description,
-        finalValue,
-        finalCusto,
-        productData.category,
-        Timestamp.fromDate(new Date()),
-        finalImageUrl,
-        productData.codeBar,
-        productData.backgroundColor
+      const productRef = doc(
+        db,
+        "users",
+        userId,
+        "products",
+        productId.toString()
       );
-
-      // Mensagem de sucesso
-      Alert.alert("Sucesso", "Produto adicionado com sucesso!");
-
-      // Limpando os campos
-      setProductData({
-        title: "",
-        description: "",
-        value: "",
-        custo: "",
-        category: "",
-        imageUrl: "",
-        codeBar: "",
-        backgroundColor: null,
+      await updateDoc(productRef, {
+        title: productData.title,
+        description: productData.description,
+        value: finalValue,
+        custo: finalCusto,
+        category: productData.category,
+        imageUrl: finalImageUrl,
+        codeBar: productData.codeBar,
+        backgroundColor: productData.backgroundColor,
       });
 
-      // Emitindo evento para atualizar a lista
+      Alert.alert("Sucesso", "Produto atualizado com sucesso.");
       eventBus.emit("produtoAtualizado");
+      router.back();
     } catch (error) {
-      console.error("Erro ao adicionar produto:", error);
-      Alert.alert("Erro", "Falha ao adicionar o produto.");
+      Alert.alert("Erro", "Falha ao atualizar produto.");
     } finally {
-      setIsUploading(false);
+      setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: "#f8f8f8",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text>Carregando...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f8f8f8" }}>
@@ -305,6 +400,7 @@ const CriarWeb = () => {
                   monetario={true}
                 />
               </View>
+
               <View style={{ position: "relative", zIndex: 9999 }}>
                 <CategoryDropdownWeb
                   value={productData.category}
@@ -313,6 +409,7 @@ const CriarWeb = () => {
                   }
                 />
               </View>
+
               <FormFieldProduct
                 title="Código de barras"
                 value={productData.codeBar}
@@ -324,33 +421,46 @@ const CriarWeb = () => {
             </View>
           </View>
 
-          {/* Save Button - Full Width */}
-          <TouchableOpacity
-            onPress={handleAddProduct}
-            disabled={isUploading}
-            style={{
-              marginTop: 32,
-              paddingVertical: 16,
-              backgroundColor: "#4caf50",
-              borderRadius: 8,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {isUploading ? (
+          {/* Action Buttons */}
+          <View style={{ flexDirection: "row", gap: 16, marginTop: 32 }}>
+            <TouchableOpacity
+              onPress={handleDeleteProduct}
+              disabled={isDeleting}
+              style={{
+                flex: 1,
+                paddingVertical: 16,
+                backgroundColor: "#dc3545",
+                borderRadius: 8,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <Text style={{ color: "white", fontWeight: "bold" }}>
-                Processando...
+                {isDeleting ? "Excluindo..." : "Excluir Produto"}
               </Text>
-            ) : (
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleSaveProduct}
+              disabled={isSaving}
+              style={{
+                flex: 1,
+                paddingVertical: 16,
+                backgroundColor: "#4caf50",
+                borderRadius: 8,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <Text style={{ color: "white", fontWeight: "bold" }}>
-                Adicionar Produto
+                {isSaving ? "Salvando..." : "Salvar Alterações"}
               </Text>
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
   );
 };
 
-export default CriarWeb;
+export default EditarProdutoWeb;

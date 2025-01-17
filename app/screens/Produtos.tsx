@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ModalProduto from "@/components/ModalProduto";
 import eventBus from "@/utils/eventBus";
 import { showMessage } from "react-native-flash-message";
+import ModalProdutoWeb from "@/components/ModalProdutoWeb";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
@@ -36,15 +37,22 @@ const Produtos = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const getNumColumns = () => {
-    if (viewMode === "list") return 1;
+    if (viewMode === "list") {
+      if (Platform.OS === "web") {
+        return 2; // Para "LIST" e "WEB", exibe 2 colunas
+      }
+      return 1; // Para "LIST" e não "WEB", exibe 1 coluna
+    }
 
+    // Para os outros casos (não "LIST")
     if (Platform.OS === "web") {
-      if (width > 1400) return 6;
+      if (width > 1400) return 7;
       if (width > 1100) return 5;
       if (width > 800) return 4;
       return 3;
     }
-    return 3;
+
+    return 3; // Para as plataformas móveis (não "web")
   };
 
   const numColumns = getNumColumns();
@@ -53,8 +61,8 @@ const Produtos = () => {
     () => ({
       justifyContent:
         Platform.OS === "web"
-          ? ("flex-start" as "flex-start")
-          : ("space-around" as "space-around"),
+          ? "space-around" // Para web, usa justify-around para distribuir os itens
+          : "space-between", // Para dispositivos móveis, você pode usar "space-between" ou outro alinhamento
       marginBottom: 16,
       gap: 16,
       paddingHorizontal: Platform.OS === "web" ? 16 : 8,
@@ -168,12 +176,15 @@ const Produtos = () => {
   };
 
   const handleEditProduct = (product) => {
+    const isWeb = Platform.OS === "web";
+
+    const path = isWeb ? "/screens/EditarProdutoWeb" : "/screens/EditarProduto";
+
     router.push({
-      pathname: "/screens/EditarProduto",
+      pathname: path,
       params: { productId: product.id },
     });
   };
-
   const handleProductPress = (product) => {
     setSelectedProduct(product);
     setIsModalVisible(true);
@@ -187,33 +198,24 @@ const Produtos = () => {
   const renderProduct = ({ item, index }) => {
     if (viewMode === "list") {
       return (
-        <View className="mb-2">
-          <CardProdutoSimples
-            title={item.title}
-            price={item.value}
-            imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
-            backgroundColor={item.backgroundColor}
-            onPress={() => handleProductPress(item)}
-          />
-        </View>
-      );
-    }
-
-    return (
-      <View
-        style={{
-          flex: Platform.OS === "web" ? 1 : undefined,
-          maxWidth: Platform.OS === "web" ? `${100 / numColumns}%` : undefined,
-        }}
-      >
-        <CardProduto1
+        <CardProdutoSimples
           title={item.title}
           price={item.value}
           imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
           backgroundColor={item.backgroundColor}
           onPress={() => handleProductPress(item)}
         />
-      </View>
+      );
+    }
+
+    return (
+      <CardProduto1
+        title={item.title}
+        price={item.value}
+        imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
+        backgroundColor={item.backgroundColor}
+        onPress={() => handleProductPress(item)}
+      />
     );
   };
 
@@ -243,10 +245,8 @@ const Produtos = () => {
         keyExtractor={(item) => item.id}
         numColumns={numColumns}
         key={numColumns}
-        className="mt-4"
-        columnWrapperStyle={
-          viewMode === "grid" ? columnWrapperStyle : undefined
-        }
+        className="mt-1"
+        columnWrapperStyle={numColumns > 1 ? columnWrapperStyle : undefined}
         contentContainerStyle={{
           padding: Platform.OS === "web" ? 16 : 2,
         }}
@@ -259,15 +259,28 @@ const Produtos = () => {
           </Text>
         )}
       />
-      <ModalProduto
-        isVisible={isModalVisible}
-        produto={selectedProduct}
-        onClose={handleCloseModal}
-        onEdit={() => {
-          handleCloseModal();
-          handleEditProduct(selectedProduct);
-        }}
-      />
+
+      {Platform.OS === "web" ? (
+        <ModalProdutoWeb
+          isVisible={isModalVisible}
+          produto={selectedProduct}
+          onClose={handleCloseModal}
+          onEdit={() => {
+            handleCloseModal();
+            handleEditProduct(selectedProduct);
+          }}
+        />
+      ) : (
+        <ModalProduto
+          isVisible={isModalVisible}
+          produto={selectedProduct}
+          onClose={handleCloseModal}
+          onEdit={() => {
+            handleCloseModal();
+            handleEditProduct(selectedProduct);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };

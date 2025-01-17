@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, Platform } from "react-native";
 import { Image } from "expo-image";
 import TouchableWithSound from "./TouchableWithSound";
-import { getUserCategories } from "@/userService"; // Ajuste o caminho conforme necessário
+import { getUserCategories } from "@/userService";
 
 interface ModalProdutoProps {
   isVisible: boolean;
@@ -39,7 +39,7 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
           setCategoryName(category?.name || produto.category);
         } catch (error) {
           console.error("Erro ao buscar categoria:", error);
-          setCategoryName(produto.category); // Fallback para o valor original
+          setCategoryName(produto.category);
         }
       }
     };
@@ -60,8 +60,8 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
   }).format(produto.custo || 0);
 
   const handleClose = () => {
-    setCategoryName(""); // Limpa o nome da categoria
-    onClose(); // Chama a função original de fechar
+    setCategoryName("");
+    onClose();
   };
 
   return (
@@ -72,69 +72,154 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
       onRequestClose={handleClose}
     >
       <View className="flex-1 bg-black/50 justify-center items-center p-4">
-        <View className="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
-          {/* Imagem do Produto */}
-          <View className="w-full aspect-square">
-            {produto.imageUrl ? (
-              <Image
-                source={{ uri: produto.imageUrl }}
-                className="w-full h-full"
-                contentFit="cover"
-              />
-            ) : (
-              <View
-                className="w-full h-full"
-                style={{
-                  backgroundColor: produto.backgroundColor || "#e5e5e5",
-                }}
-              />
-            )}
-          </View>
-
-          {/* Informações do Produto */}
-          <View className="p-6">
-            <Text className="text-2xl font-bold text-gray-800 mb-2">
-              {produto.title}
-            </Text>
-
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold text-green-600">
-                {formattedPrice}
-              </Text>
-              <Text className="text-sm text-gray-500">
-                Custo: {formattedCusto}
-              </Text>
-            </View>
-
-            {produto.category && (
-              <View className="bg-gray-100 self-start px-3 py-1 rounded-full mb-4">
-                <Text className="text-sm text-gray-600">{categoryName}</Text>
+        <View
+          className={`bg-white rounded-2xl overflow-hidden ${
+            Platform.OS === "web" ? "w-[90%]" : "w-full max-w-lg"
+          }`}
+        >
+          {/* Layout para Web */}
+          {Platform.OS === "web" ? (
+            <View className="flex-row">
+              {/* Coluna da Imagem */}
+              <View className="w-1/2">
+                {produto.imageUrl ? (
+                  <Image
+                    source={{ uri: produto.imageUrl }}
+                    className="w-full aspect-square"
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View
+                    className="w-full aspect-square"
+                    style={{
+                      backgroundColor: produto.backgroundColor || "#e5e5e5",
+                    }}
+                  />
+                )}
               </View>
-            )}
-            {produto.description && (
-              <Text className="text-gray-600 mb-6">{produto.description}</Text>
-            )}
 
-            {/* Botões */}
-            <View className="flex-row gap-4">
-              <TouchableWithSound
-                onPress={onEdit}
-                className="flex-1 bg-terceira-500 py-3 rounded-lg"
-              >
-                <Text className="text-white text-center font-bold">Editar</Text>
-              </TouchableWithSound>
-
-              <TouchableWithSound
-                onPress={handleClose}
-                className="flex-1 bg-gray-200 py-3 rounded-lg"
-                soundType="click2"
-              >
-                <Text className="text-gray-700 text-center font-bold">
-                  Cancelar
+              {/* Coluna das Informações */}
+              <View className="w-1/2 p-8">
+                <Text className="text-3xl font-bold text-gray-800 mb-4">
+                  {produto.title}
                 </Text>
-              </TouchableWithSound>
+
+                <View className="flex-row justify-between items-center mb-6">
+                  <Text className="text-2xl font-bold text-green-600">
+                    {formattedPrice}
+                  </Text>
+                  <Text className="text-base text-gray-500">
+                    Custo: {formattedCusto}
+                  </Text>
+                </View>
+
+                {produto.category && (
+                  <View className="bg-gray-100 self-start px-4 py-2 rounded-full mb-6">
+                    <Text className="text-base text-gray-600">
+                      {categoryName}
+                    </Text>
+                  </View>
+                )}
+
+                {produto.description && (
+                  <Text className="text-gray-600 mb-8 text-lg">
+                    {produto.description}
+                  </Text>
+                )}
+
+                <View className="flex-row gap-4 mt-auto">
+                  <TouchableWithSound
+                    onPress={onEdit}
+                    className="flex-1 bg-terceira-500 py-4 rounded-lg"
+                  >
+                    <Text className="text-white text-center font-bold text-lg">
+                      Editar
+                    </Text>
+                  </TouchableWithSound>
+
+                  <TouchableWithSound
+                    onPress={handleClose}
+                    className="flex-1 bg-gray-200 py-4 rounded-lg"
+                    soundType="click2"
+                  >
+                    <Text className="text-gray-700 text-center font-bold text-lg">
+                      Cancelar
+                    </Text>
+                  </TouchableWithSound>
+                </View>
+              </View>
             </View>
-          </View>
+          ) : (
+            /* Layout Mobile (Original) */
+            <>
+              <View className="w-full aspect-square">
+                {produto.imageUrl ? (
+                  <Image
+                    source={{ uri: produto.imageUrl }}
+                    className="w-full h-full"
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View
+                    className="w-full h-full"
+                    style={{
+                      backgroundColor: produto.backgroundColor || "#e5e5e5",
+                    }}
+                  />
+                )}
+              </View>
+
+              <View className="p-6">
+                <Text className="text-2xl font-bold text-gray-800 mb-2">
+                  {produto.title}
+                </Text>
+
+                <View className="flex-row justify-between items-center mb-4">
+                  <Text className="text-xl font-bold text-green-600">
+                    {formattedPrice}
+                  </Text>
+                  <Text className="text-sm text-gray-500">
+                    Custo: {formattedCusto}
+                  </Text>
+                </View>
+
+                {produto.category && (
+                  <View className="bg-gray-100 self-start px-3 py-1 rounded-full mb-4">
+                    <Text className="text-sm text-gray-600">
+                      {categoryName}
+                    </Text>
+                  </View>
+                )}
+
+                {produto.description && (
+                  <Text className="text-gray-600 mb-6">
+                    {produto.description}
+                  </Text>
+                )}
+
+                <View className="flex-row gap-4">
+                  <TouchableWithSound
+                    onPress={onEdit}
+                    className="flex-1 bg-terceira-500 py-3 rounded-lg"
+                  >
+                    <Text className="text-white text-center font-bold">
+                      Editar
+                    </Text>
+                  </TouchableWithSound>
+
+                  <TouchableWithSound
+                    onPress={handleClose}
+                    className="flex-1 bg-gray-200 py-3 rounded-lg"
+                    soundType="click2"
+                  >
+                    <Text className="text-gray-700 text-center font-bold">
+                      Cancelar
+                    </Text>
+                  </TouchableWithSound>
+                </View>
+              </View>
+            </>
+          )}
         </View>
       </View>
     </Modal>

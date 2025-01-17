@@ -17,7 +17,7 @@ const CardProdutoSimples = ({
   }).format(price);
 
   // Define estilos para a versão web mais reduzida
-  const webStyles = Platform.OS === "web" ? "p-2 w-16 h-16 text-sm" : "";
+  const webStyles = Platform.OS === "web" ? "p-2 h-16 text-sm" : "";
 
   return (
     <TouchableWithSound

@@ -114,7 +114,7 @@ const Vender = () => {
   const getNumColumns = () => {
     if (Platform.OS === "web") {
       if (viewMode === "list") return 2; // Exibe 2 colunas para "list" na web
-      if (width > 1400) return 6; // Telas muito grandes
+      if (width > 1400) return 7; // Telas muito grandes
       if (width > 1100) return 5; // Telas grandes
       if (width > 800) return 4; // Telas médias
       return 3; // Telas pequenas
@@ -146,7 +146,10 @@ const Vender = () => {
       };
     }
     return {
-      justifyContent: Platform.OS === "web" ? "flex-start" : "space-around",
+      justifyContent:
+        Platform.OS === "web"
+          ? "space-around" // Para web, usa justify-around para distribuir os itens
+          : "space-between", // Para dispositivos móveis, você pode usar "space-between" ou outro alinhamento
       marginBottom: 16,
       gap: 16,
       paddingHorizontal: Platform.OS === "web" ? 16 : 8,
@@ -424,7 +427,11 @@ const Vender = () => {
                 onChangeText={setSearchText}
               />
               <TouchableOpacity onPress={toggleViewMode} className="h-10 w-10 ">
-                <View className="w-10 h-10 rounded-lg">
+                <View
+                  className={`w-10 h-10 rounded-lg ${
+                    Platform.OS === "web" ? "bg-secundaria-500" : ""
+                  }`}
+                >
                   <Image
                     source={
                       viewMode === "grid" ? icons.view_grid : icons.view_list

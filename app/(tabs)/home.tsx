@@ -288,7 +288,7 @@ const Home = () => {
               title="Criar"
               onPress={() => {
                 // Alteração para verificar a plataforma
-                if (Platform.OS === 'web') {
+                if (Platform.OS === "web") {
                   router.push("/screens/CriarWeb");
                 } else {
                   router.push("/criar");
