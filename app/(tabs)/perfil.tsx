@@ -17,6 +17,9 @@ import { router, useRouter } from "expo-router";
 import { getUserInfo } from "@/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+const CACHE_KEY = "user_products_cache";
+const VIEW_MODE_KEY = "products_view_mode";
 
 const Perfil = () => {
   const [loading, setLoading] = useState(true);
@@ -89,8 +92,19 @@ const Perfil = () => {
     loadUserInfo();
   };
 
+  const clearCache = async () => {
+    try {
+      await AsyncStorage.removeItem(CACHE_KEY); // Limpa o cache de produtos
+      await AsyncStorage.removeItem(VIEW_MODE_KEY); // Limpa o modo de visualização
+      // Adicione outras chaves que você deseja limpar aqui
+    } catch (error) {
+      console.error("Erro ao limpar cache:", error);
+    }
+  };
+
   const performLogout = async () => {
     try {
+      await clearCache(); // Limpa o cache antes de sair
       await signOut(auth);
       router.replace("/login");
     } catch (error) {
@@ -100,7 +114,7 @@ const Perfil = () => {
 
   const handleLogout = async () => {
     // Skip confirmation for web version
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       performLogout();
       return;
     }
@@ -116,14 +130,10 @@ const Perfil = () => {
         ]
       );
     } else {
-      Alert.alert(
-        "Sair",
-        "Deseja realmente sair?",
-        [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Sair", style: "destructive", onPress: performLogout },
-        ]
-      );
+      Alert.alert("Sair", "Deseja realmente sair?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Sair", style: "destructive", onPress: performLogout },
+      ]);
     }
   };
 
