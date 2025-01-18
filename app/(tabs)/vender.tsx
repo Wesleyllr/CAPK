@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  Animated,
   TextInput,
   ScrollView,
   useWindowDimensions,
@@ -47,9 +46,6 @@ const Vender = () => {
   const [cartCount, setCartCount] = useState(0);
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
-  const scaleAnim = new Animated.Value(1);
-  const opacityAnim = new Animated.Value(1);
-  const translateYAnim = new Animated.Value(0);
   const [viewMode, setViewMode] = useState("grid"); // "grid" ou "list"
   const [selectedQuantities, setSelectedQuantities] = useState<{
     [key: string]: number;
@@ -159,44 +155,6 @@ const Vender = () => {
       paddingHorizontal: Platform.OS === "web" ? 16 : 8,
     };
   }, [viewMode]);
-  const animateButton = () => {
-    Animated.sequence([
-      // Aumenta o tamanho do botão com suavidade
-      Animated.spring(scaleAnim, {
-        toValue: 1.2,
-        useNativeDriver: true,
-      }),
-      // Diminui o tamanho de volta
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-      }),
-      // Anima a opacidade (fade in e fade out)
-      Animated.timing(opacityAnim, {
-        toValue: 0.7,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      // Movimenta o botão levemente para cima e para baixo
-      Animated.sequence([
-        Animated.timing(translateYAnim, {
-          toValue: -10,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateYAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  };
 
   const loadCachedProducts = async () => {
     try {

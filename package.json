@@ -52,6 +52,7 @@
     "expo-web-browser": "~14.0.2",
     "firebase": "^11.1.0",
     "jest-expo": "~52.0.3",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.469.0",
     "metro-config": "^0.81.0",
     "metro-resolver": "^0.81.0",
