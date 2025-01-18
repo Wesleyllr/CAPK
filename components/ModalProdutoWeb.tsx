@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Modal, ScrollView, Platform } from "react-native";
 import { Image } from "react-native";
-import TouchableWithSound from "./TouchableWithSound";
 import { getUserCategories } from "@/userService";
 
 interface ModalProdutoWebProps {
@@ -191,7 +190,7 @@ const ModalProdutoWeb: React.FC<ModalProdutoWebProps> = ({
               </ScrollView>
 
               <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
-                <TouchableWithSound
+                <TouchableOpacity
                   onPress={onEdit}
                   style={{
                     flex: 1,
@@ -206,9 +205,9 @@ const ModalProdutoWeb: React.FC<ModalProdutoWebProps> = ({
                   >
                     Editar
                   </Text>
-                </TouchableWithSound>
+                </TouchableOpacity>
 
-                <TouchableWithSound
+                <TouchableOpacity
                   onPress={handleClose}
                   style={{
                     flex: 1,
@@ -217,7 +216,6 @@ const ModalProdutoWeb: React.FC<ModalProdutoWebProps> = ({
                     borderRadius: 8,
                     alignItems: "center",
                   }}
-                  soundType="click2"
                 >
                   <Text
                     style={{
@@ -228,7 +226,7 @@ const ModalProdutoWeb: React.FC<ModalProdutoWebProps> = ({
                   >
                     Cancelar
                   </Text>
-                </TouchableWithSound>
+                </TouchableOpacity>
               </View>
             </View>
           </View>

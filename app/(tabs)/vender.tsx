@@ -29,7 +29,7 @@ import { useNavigation } from "@react-navigation/native";
 import { getColor } from "@/colors";
 import CardProdutoSimples from "@/components/CardProdutoSimples";
 import eventBus from "@/utils/eventBus";
-import TouchableWithSound from "@/components/TouchableWithSound";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5;
@@ -107,7 +107,11 @@ const Vender = () => {
       await CartService.clearCart();
       setCartCount(0); // Atualiza a contagem do carrinho
     } catch (error) {
-      Alert.alert("Erro", "Falha ao limpar itens selecionados.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao limpar itens selecionados.",
+        type: "danger",
+      });
     }
   };
 
@@ -237,7 +241,11 @@ const Vender = () => {
         cacheProducts(userProducts);
       }
     } catch (error) {
-      Alert.alert("Erro", "Falha ao carregar dados.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao carregar dados.",
+        type: "danger",
+      });
     } finally {
       setLoading(false);
     }
@@ -273,7 +281,11 @@ const Vender = () => {
       const userCategories = await getUserCategories();
       setCategories(userCategories);
     } catch (error) {
-      Alert.alert("Erro", "Falha ao carregar categorias.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao carregar categorias.",
+        type: "danger",
+      });
     }
   };
 
@@ -289,7 +301,11 @@ const Vender = () => {
       setProducts(userProducts);
       cacheProducts(userProducts);
     } catch (error) {
-      Alert.alert("Erro", "Falha ao atualizar produtos.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao atualizar produtos.",
+        type: "danger",
+      });
     } finally {
       setIsRefreshing(false);
     }
@@ -348,7 +364,11 @@ const Vender = () => {
       await CartService.addItem(cartItem);
       setCartCount((prev) => prev + 1);
     } catch (error) {
-      Alert.alert("Erro", "Falha ao adicionar ao carrinho");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao adicionar ao carrinho",
+        type: "danger",
+      });
     }
   };
 
@@ -457,13 +477,12 @@ const Vender = () => {
       </View>
 
       {/* Botão para limpar os itens selecionados (lado esquerdo) */}
-      <TouchableWithSound
+      <TouchableOpacity
         className="absolute bottom-24 right-8 w-14 h-14 bg-red-500 rounded-full items-center justify-center"
         onPress={handleClearSelectedItems}
-        soundType="click2"
       >
         <Text className="text-white font-bold text-sm ">Limpar</Text>
-      </TouchableWithSound>
+      </TouchableOpacity>
 
       {/* Botão do carrinho (lado direito) */}
       <TouchableOpacity

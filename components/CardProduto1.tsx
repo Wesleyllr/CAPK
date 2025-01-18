@@ -1,7 +1,6 @@
 import React from "react";
 import { TouchableOpacity, View, Text } from "react-native";
 import { Image } from "expo-image";
-import TouchableWithSound from "@/components/TouchableWithSound";
 
 const CardProduto1 = ({
   imageSource,
@@ -17,7 +16,7 @@ const CardProduto1 = ({
   }).format(price);
 
   return (
-    <TouchableWithSound onPress={onPress}>
+    <TouchableOpacity onPress={onPress}>
       <View className="w-32 h-48 bg-white relative">
         {imageSource?.uri ? (
           <Image
@@ -43,7 +42,7 @@ const CardProduto1 = ({
           {title}
         </Text>
       </View>
-    </TouchableWithSound>
+    </TouchableOpacity>
   );
 };
 

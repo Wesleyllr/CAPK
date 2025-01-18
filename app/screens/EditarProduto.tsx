@@ -18,7 +18,6 @@ import Header from "@/components/CustomHeader";
 import ColorSelector from "@/components/ColorSelector";
 import { pickImagem } from "@/scripts/selecionarImagem";
 import { uploadProductImage } from "@/scripts/uploadImage";
-import TouchableWithSound from "@/components/TouchableWithSound";
 import eventBus from "@/utils/eventBus";
 import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
@@ -136,7 +135,7 @@ const EditarProduto = () => {
       "Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.",
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Excluir", style: "destructive", onPress: gi },
+        { text: "Excluir", style: "destructive", onPress: confirmDelete },
       ]
     );
   };
@@ -401,11 +400,10 @@ const EditarProduto = () => {
 
         {/* Botões de Excluir e Salvar */}
         <View className="flex-1 flex-row justify-between mx-4 mt-4 mb-8 gap-4">
-          <TouchableWithSound
+          <TouchableOpacity
             onPress={handleDeleteProduct}
             className="flex-1 p-4 bg-red-500 rounded-lg"
             disabled={isDeleting}
-            soundType="click2"
           >
             {isDeleting ? (
               <ActivityIndicator color="white" />
@@ -414,9 +412,9 @@ const EditarProduto = () => {
                 Excluir Produto
               </Text>
             )}
-          </TouchableWithSound>
+          </TouchableOpacity>
 
-          <TouchableWithSound
+          <TouchableOpacity
             onPress={handleSaveProduct}
             className="flex-1 p-4 bg-green-500 rounded-lg"
             disabled={isSaving}
@@ -428,7 +426,7 @@ const EditarProduto = () => {
                 Salvar Produto
               </Text>
             )}
-          </TouchableWithSound>
+          </TouchableOpacity>
         </View>
 
         {isSaving && <ActivityIndicator size="large" className="my-4" />}

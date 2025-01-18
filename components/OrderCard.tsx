@@ -4,7 +4,6 @@ import { IOrder } from "@/types/types";
 import { OrderStatus } from "@/types/types";
 import { formatCurrency, formatDateHour } from "@/utils/formatters";
 import { CONSTANTS } from "@/constants/constants";
-import TouchableWithSound from "./TouchableWithSound";
 
 interface OrderCardProps {
   order: IOrder;
@@ -39,22 +38,20 @@ const OrderCard = memo(({ order, onPress, onStatusUpdate }: OrderCardProps) => {
         <View className="flex-row justify-end gap-2">
           {order.status === "pending" ? (
             <>
-              <TouchableWithSound
+              <TouchableOpacity
                 onPress={() => onStatusUpdate(order.id, "canceled")}
                 className="bg-sexta px-4 py-2 rounded"
                 accessibilityLabel="Cancelar pedido"
-                soundType="click2"
               >
                 <Text className="text-primaria">Cancelar</Text>
-              </TouchableWithSound>
-              <TouchableWithSound
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={() => onStatusUpdate(order.id, "completed")}
                 className="bg-green-600 px-4 py-2 rounded"
                 accessibilityLabel="Finalizar pedido"
-                soundType="click"
               >
                 <Text className="text-primaria">Finalizar</Text>
-              </TouchableWithSound>
+              </TouchableOpacity>
             </>
           ) : (
             <TouchableOpacity

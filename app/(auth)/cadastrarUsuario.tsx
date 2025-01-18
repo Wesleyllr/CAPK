@@ -20,6 +20,7 @@ import { router } from "expo-router";
 import { images } from "@/constants";
 import { LinearGradient } from "expo-linear-gradient"; // Ensure you have expo-linear-gradient installed
 import { sendEmailVerification } from "firebase/auth";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
 const Cadastro = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -39,12 +40,20 @@ const Cadastro = ({ navigation }) => {
   // Função para lidar com o cadastro
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword || !username || !nomeCompleto) {
-      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Por favor, preencha todos os campos.",
+        type: "danger",
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Erro", "As senhas não coincidem.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "As senhas não coincidem.",
+        type: "danger",
+      });
       return;
     }
 
@@ -72,10 +81,11 @@ const Cadastro = ({ navigation }) => {
       });
 
       // Cadastro bem-sucedido
-      Alert.alert(
-        "Sucesso",
-        "Cadastro realizado com sucesso! Um e-mail de verificação foi enviado."
-      );
+      alertaPersonalizado({
+        message: "Sucesso",
+        description: "Cadastro realizado com sucesso! Um e-mail de verificação foi enviado.",
+        type: "success",
+      });
       router.replace("/login"); // Navega para a tela de Login
 
       // Resetar campos
@@ -86,7 +96,11 @@ const Cadastro = ({ navigation }) => {
       setNomeCompleto("");
     } catch (error) {
       const friendlyMessage = getFriendlyErrorMessage(error.code);
-      Alert.alert("Erro", friendlyMessage);
+      alertaPersonalizado({
+        message: "Erro",
+        description: friendlyMessage,
+        type: "danger",
+      });
     } finally {
       setLoading(false);
     }

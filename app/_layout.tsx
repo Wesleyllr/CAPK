@@ -15,6 +15,7 @@ import FlashMessage from "react-native-flash-message";
 import { View, Platform } from "react-native";
 import WebNavBar from "@/components/WebNavBar";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado"; // Importing the custom alert function
 
 SplashScreen.preventAutoHideAsync();
 

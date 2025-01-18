@@ -20,6 +20,8 @@ import { useRouter } from "expo-router";
 import ColorSelector from "@/components/ColorSelector";
 import { db, auth } from "@/firebaseConfig";
 import { Timestamp } from "firebase/firestore";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
+
 
 const Criar = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -62,14 +64,19 @@ const Criar = () => {
 
   const handleAddProduct = async () => {
     if (!selectedImage && !selectedColor) {
-      Alert.alert("Erro", "Selecione uma imagem ou uma cor para o produto.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Selecione uma imagem ou uma cor para o produto.",
+        type: "danger",
+      });
       return;
     }
     if (!productName || !selectedCategory) {
-      Alert.alert(
-        "Erro",
-        "Informe o nome do produto e selecione uma categoria."
-      );
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Informe o nome do produto e selecione uma categoria.",
+        type: "danger",
+      });
       return;
     }
 
@@ -96,7 +103,11 @@ const Criar = () => {
         selectedColor
       );
 
-      Alert.alert("Sucesso", "Produto adicionado com sucesso!");
+      alertaPersonalizado({
+        message: "Sucesso",
+        description: "Produto adicionado com sucesso!",
+        type: "success",
+      });
 
       // Limpar campos
       setProductName("");
@@ -109,7 +120,11 @@ const Criar = () => {
       setSelectedCategory(null);
     } catch (error) {
       console.error("Erro ao adicionar produto:", error);
-      Alert.alert("Erro", "Falha ao adicionar o produto.");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao adicionar o produto.",
+        type: "danger",
+      });
     } finally {
       setIsUploading(false);
     }

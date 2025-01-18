@@ -1,7 +1,6 @@
 import React from "react";
 import { TouchableOpacity, View, Text, Platform } from "react-native";
 import { Image } from "expo-image";
-import TouchableWithSound from "./TouchableWithSound";
 
 const CardProdutoSimples = ({
   imageSource,
@@ -20,7 +19,7 @@ const CardProdutoSimples = ({
   const webStyles = Platform.OS === "web" ? "p-2 h-16 text-sm" : "";
 
   return (
-    <TouchableWithSound
+    <TouchableOpacity
       onPress={onPress}
       className={`flex-1 mb-2 mx-1 ${webStyles}`}
     >
@@ -86,7 +85,7 @@ const CardProdutoSimples = ({
           </View>
         </View>
       </View>
-    </TouchableWithSound>
+    </TouchableOpacity>
   );
 };
 

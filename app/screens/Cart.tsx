@@ -11,6 +11,7 @@ import Header from "@/components/CustomHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import EventEmitter from "eventemitter3";
 import eventBus from "@/utils/eventBus";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
 // Criar uma instância global do EventEmitter
 export const cartEvents = new EventEmitter();
@@ -42,7 +43,11 @@ export default function Cart() {
       const cartItems = await CartService.getItems();
       setItems(cartItems);
     } catch (error) {
-      Alert.alert("Erro", "Falha ao carregar o carrinho");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao carregar o carrinho",
+        type: "danger",
+      });
     } finally {
       setLoading(false);
     }
@@ -67,7 +72,11 @@ export default function Cart() {
       }
       await loadCart();
     } catch (error) {
-      Alert.alert("Erro", "Falha ao atualizar quantidade");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao atualizar quantidade",
+        type: "danger",
+      });
     }
   };
 
@@ -77,7 +86,11 @@ export default function Cart() {
       cartEvents.emit("quantityChanged", { id, quantity: 0 });
       await loadCart();
     } catch (error) {
-      Alert.alert("Erro", "Falha ao remover item");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao remover item",
+        type: "danger",
+      });
     }
   };
 
@@ -86,7 +99,11 @@ export default function Cart() {
       await CartService.updateItem(id, { observations });
       await loadCart();
     } catch (error) {
-      Alert.alert("Erro", "Falha ao atualizar observações");
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Falha ao atualizar observações",
+        type: "danger",
+      });
     }
   };
 
@@ -94,15 +111,21 @@ export default function Cart() {
     try {
       const orderId = await OrderService.createOrder(items, total, status);
       await CartService.clearCart();
-      // Emitir evento de limpeza do carrinho
       cartEvents.emit("cartCleared");
       const statusText = status === "completed" ? "finalizado" : "em aberto";
-      Alert.alert("Sucesso", `Pedido #${orderId} ${statusText}!`);
+      alertaPersonalizado({
+        message: "Sucesso",
+        description: `Pedido #${orderId} ${statusText}!`,
+        type: "success",
+      });
       eventBus.emit("pedidoAtualizado");
-
       router.back();
     } catch (error) {
-      Alert.alert("Erro", error.message || error);
+      alertaPersonalizado({
+        message: "Erro",
+        description: error.message || error,
+        type: "danger",
+      });
     }
   };
 

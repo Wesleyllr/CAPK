@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Modal, TouchableOpacity, Platform } from "react-native";
 import { Image } from "expo-image";
-import TouchableWithSound from "./TouchableWithSound";
 import { getUserCategories } from "@/userService";
 
 interface ModalProdutoProps {
@@ -128,24 +127,23 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
                 )}
 
                 <View className="flex-row gap-4 mt-auto">
-                  <TouchableWithSound
+                  <TouchableOpacity
                     onPress={onEdit}
                     className="flex-1 bg-terceira-500 py-4 rounded-lg"
                   >
                     <Text className="text-white text-center font-bold text-lg">
                       Editar
                     </Text>
-                  </TouchableWithSound>
+                  </TouchableOpacity>
 
-                  <TouchableWithSound
+                  <TouchableOpacity
                     onPress={handleClose}
                     className="flex-1 bg-gray-200 py-4 rounded-lg"
-                    soundType="click2"
                   >
                     <Text className="text-gray-700 text-center font-bold text-lg">
                       Cancelar
                     </Text>
-                  </TouchableWithSound>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -198,24 +196,23 @@ const ModalProduto: React.FC<ModalProdutoProps> = ({
                 )}
 
                 <View className="flex-row gap-4">
-                  <TouchableWithSound
+                  <TouchableOpacity
                     onPress={onEdit}
                     className="flex-1 bg-terceira-500 py-3 rounded-lg"
                   >
                     <Text className="text-white text-center font-bold">
                       Editar
                     </Text>
-                  </TouchableWithSound>
+                  </TouchableOpacity>
 
-                  <TouchableWithSound
+                  <TouchableOpacity
                     onPress={handleClose}
                     className="flex-1 bg-gray-200 py-3 rounded-lg"
-                    soundType="click2"
                   >
                     <Text className="text-gray-700 text-center font-bold">
                       Cancelar
                     </Text>
-                  </TouchableWithSound>
+                  </TouchableOpacity>
                 </View>
               </View>
             </>
