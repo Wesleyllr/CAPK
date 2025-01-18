@@ -8,7 +8,8 @@ export class OrderService {
   static async createOrder(
     items: ICartItem[],
     total: number,
-    status: "completed" | "pending" | "canceled"
+    status: "completed" | "pending" | "canceled",
+    nomeCliente: string // Adicione este parâmetro
   ): Promise<string> {
     const userId = auth.currentUser?.uid;
     if (!userId) throw new Error("User not authenticated");
@@ -19,6 +20,7 @@ export class OrderService {
       total,
       status,
       createdAt: new Date(),
+      nomeCliente, // Adicione este campo
     };
 
     try {

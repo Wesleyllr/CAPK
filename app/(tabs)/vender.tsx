@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Platform } from "react-native";
 import { cartEvents } from "../screens/Cart"; // Adicione este import
 
 import {
   View,
   Text,
-  Alert,
   TouchableOpacity,
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   TextInput,
@@ -22,13 +20,15 @@ import { getUserInfo } from "@/userService";
 import { getUserProducts } from "@/scripts/productService";
 import { getUserCategories } from "@/userService";
 import CardProduto1 from "@/components/CardProduto1";
-import { icons, images } from "@/constants";
+import { icons } from "@/constants";
 import { CartService } from "@/services/CartService";
 import { useNavigation } from "@react-navigation/native";
 import { getColor } from "@/colors";
 import CardProdutoSimples from "@/components/CardProdutoSimples";
 import eventBus from "@/utils/eventBus";
 import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
+import FormFieldProduct from "@/components/FormFieldProduct";
+import { OrderService } from "@/services/OrderService";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5;
@@ -47,9 +47,12 @@ const Vender = () => {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const [viewMode, setViewMode] = useState("grid"); // "grid" ou "list"
-  const [selectedQuantities, setSelectedQuantities] = useState<{
-    [key: string]: number;
-  }>({});
+  const [processingClicks, setProcessingClicks] = useState<Record<string, boolean>>({});
+
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [localCartCount, setLocalCartCount] = useState(0);
+  const [nomeCliente, setnomeCliente] = useState("");
+  const [forceUpdate, setForceUpdate] = useState(false);
 
   useEffect(() => {
     const handleQuantityChange = ({ id, quantity }) => {
@@ -59,49 +62,31 @@ const Vender = () => {
       }));
     };
 
-    cartEvents.on("quantityChanged", handleQuantityChange);
-
-    return () => {
-      cartEvents.off("quantityChanged", handleQuantityChange);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleProdutoAtualizado = () => {
-      // Recarrega os produtos
       handleRefresh();
     };
 
-    // Adiciona o listener
-    eventBus.on("produtoAtualizado", handleProdutoAtualizado);
-
-    // Cleanup quando o componente for desmontado
-    return () => {
-      eventBus.off("produtoAtualizado", handleProdutoAtualizado);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Listener para limpar as quantidades selecionadas quando o carrinho for limpo
     const handleCartCleared = () => {
       setSelectedQuantities({});
     };
 
+    cartEvents.on("quantityChanged", handleQuantityChange);
+    eventBus.on("produtoAtualizado", handleProdutoAtualizado);
     cartEvents.on("cartCleared", handleCartCleared);
 
-    // Cleanup do listener quando o componente for desmontado
     return () => {
+      cartEvents.off("quantityChanged", handleQuantityChange);
+      eventBus.off("produtoAtualizado", handleProdutoAtualizado);
       cartEvents.off("cartCleared", handleCartCleared);
     };
   }, []);
 
-  const handleClearSelectedItems = async () => {
+  const handleClearSelectedItems = useCallback(async () => {
     try {
-      // Limpa as quantidades selecionadas
       setSelectedQuantities({});
-      // Limpa o carrinho
+      setLocalCartCount(0);
       await CartService.clearCart();
-      setCartCount(0); // Atualiza a contagem do carrinho
+      setForceUpdate(prev => !prev); // Força a re-renderização
     } catch (error) {
       alertaPersonalizado({
         message: "Erro",
@@ -109,7 +94,7 @@ const Vender = () => {
         type: "danger",
       });
     }
-  };
+  }, []);
 
   const getNumColumns = () => {
     if (Platform.OS === "web") {
@@ -302,14 +287,19 @@ const Vender = () => {
       .sort((a, b) => a.title.localeCompare(b.title));
   }, [products, searchText, selectedCategory]);
 
-  const handleProductPress = async (product) => {
+  const handleProductPress = useCallback(async (product) => {
+    if (processingClicks[product.id]) {
+      return;
+    }
+  
+    setProcessingClicks(prev => ({ ...prev, [product.id]: true }));
+  
     try {
-      setSelectedQuantities((prev) => {
-        const currentQty = prev[product.id] || 0;
-        const newQty = currentQty + 1;
-        return { ...prev, [product.id]: newQty };
-      });
-
+      // Get current quantity from cart service first
+      const currentItems = await CartService.getItems();
+      const existingItem = currentItems.find(item => item.id === product.id);
+      const newQty = (existingItem?.quantity || 0) + 1;
+  
       const cartItem: ICartItem = {
         id: product.id,
         title: product.title,
@@ -318,19 +308,78 @@ const Vender = () => {
         imageUrl: product.imageUrl || undefined,
         observations: "",
       };
-
+  
       await CartService.addItem(cartItem);
-      setCartCount((prev) => prev + 1);
+  
+      // After successful cart update, update local states
+      setSelectedQuantities(prev => ({
+        ...prev,
+        [product.id]: newQty
+      }));
+  
+      // Update local cart count based on actual cart items
+      const updatedCount = await CartService.getItemCount();
+      setLocalCartCount(updatedCount);
+  
     } catch (error) {
       alertaPersonalizado({
         message: "Erro",
         description: "Falha ao adicionar ao carrinho",
         type: "danger",
       });
+    } finally {
+      setProcessingClicks(prev => ({ ...prev, [product.id]: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+  const syncCartCount = async () => {
+    const count = await CartService.getItemCount();
+    setLocalCartCount(count);
+    setForceUpdate(prev => !prev); // Força a re-renderização
+  };
+
+  // Sync on mount and when cart events occur
+  syncCartCount();
+  
+  const handleCartUpdate = () => {
+    syncCartCount();
+  };
+
+  cartEvents.on('quantityChanged', handleCartUpdate);
+  cartEvents.on('cartCleared', handleCartUpdate);
+
+  return () => {
+    cartEvents.off('quantityChanged', handleCartUpdate);
+    cartEvents.off('cartCleared', handleCartUpdate);
+  };
+}, []);
+
+  const handleOrder = async (status: "completed" | "pending") => {
+    try {
+      const items = await CartService.getItems();
+      const total = items.reduce((sum, item) => sum + item.value * item.quantity, 0);
+      const orderId = await OrderService.createOrder(items, total, status, nomeCliente);
+      await CartService.clearCart();
+      cartEvents.emit("cartCleared");
+      const statusText = status === "completed" ? "finalizado" : "em aberto";
+      alertaPersonalizado({
+        message: "Sucesso",
+        description: `Pedido #${orderId} ${statusText}!`,
+        type: "success",
+      });
+      eventBus.emit("pedidoAtualizado");
+      router.back();
+    } catch (error) {
+      alertaPersonalizado({
+        message: "Erro",
+        description: error.message || error,
+        type: "danger",
+      });
     }
   };
 
-  const renderProduct = ({ item, index }) => {
+  const renderProduct = useCallback(({ item }) => {
     const quantity = selectedQuantities[item.id] || 0;
 
     if (viewMode === "list") {
@@ -355,7 +404,7 @@ const Vender = () => {
         quantity={quantity}
       />
     );
-  };
+  }, [handleProductPress, selectedQuantities, viewMode]);
 
   return (
     <SafeAreaView className="flex-1 bg-primaria flex-col">
@@ -404,6 +453,12 @@ const Vender = () => {
                 value={searchText}
                 onChangeText={setSearchText}
               />
+              {/* CONTADOR PARA VERSÃO WEB */}
+              {Platform.OS === "web" && (
+                <View className="h-12 w-12 mr-2 bg-red-500 justify-center items-center rounded-full">
+                  <Text className="mx-2 text-xl font-bold text-white">{localCartCount}</Text>
+                </View>
+              )}
               <TouchableOpacity onPress={toggleViewMode} className="h-10 w-10 ">
                 <View
                   className={`w-10 h-10 rounded-lg ${
@@ -431,6 +486,10 @@ const Vender = () => {
               onRefresh={handleRefresh}
             />
           }
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={true}
         />
       </View>
 
@@ -447,8 +506,55 @@ const Vender = () => {
         className="absolute bottom-8 right-8 w-14 h-14 bg-green-500 rounded-full items-center justify-center"
         onPress={() => router.push("/screens/Cart")}
       >
-        <Text className="text-white font-bold">{cartCount}</Text>
+        <Text className="text-white font-bold">{localCartCount}</Text>
       </TouchableOpacity>
+
+      {Platform.OS === "web" && (
+        <View className="p-4 bg-secundaria-50">
+          <FormFieldProduct
+            title="Nome do Cliente"
+            value={nomeCliente}
+            handleChangeText={setnomeCliente}
+            placeholder="Digite o nome do cliente"
+          />
+          <View className="flex-row gap-2 mt-4">
+            <TouchableOpacity
+              onPress={handleClearSelectedItems}
+              className="flex-1 bg-red-500 p-4 rounded-lg"
+            >
+              <Text className="text-primaria text-center font-bold text-lg">
+                Limpar
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/screens/Cart")}
+              className="flex-1 bg-blue-500 p-4 rounded-lg"
+            >
+              <Text className="text-primaria text-center font-bold text-lg">
+                Carrinho
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleOrder("pending")}
+              className="flex-1 bg-terceira-500 p-4 rounded-lg"
+              disabled={localCartCount === 0}
+            >
+              <Text className="text-primaria text-center font-bold text-lg">
+                Deixar em Aberto
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleOrder("completed")}
+              className="flex-1 bg-quarta p-4 rounded-lg"
+              disabled={localCartCount === 0}
+            >
+              <Text className="text-primaria text-center font-bold text-lg">
+                Finalizar Pedido
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };

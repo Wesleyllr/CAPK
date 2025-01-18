@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import EventEmitter from "eventemitter3";
 import eventBus from "@/utils/eventBus";
 import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
+import FormFieldProduct from "@/components/FormFieldProduct";
 
 // Criar uma instância global do EventEmitter
 export const cartEvents = new EventEmitter();
@@ -23,6 +24,7 @@ export default function Cart() {
   const [items, setItems] = useState<ICartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCompactView, setIsCompactView] = useState(false);
+  const [nomeCliente, setnomeCliente] = useState("");
 
   useEffect(() => {
     const loadViewMode = async () => {
@@ -109,7 +111,7 @@ export default function Cart() {
 
   const handleOrder = async (status: "completed" | "pending") => {
     try {
-      const orderId = await OrderService.createOrder(items, total, status);
+      const orderId = await OrderService.createOrder(items, total, status, nomeCliente);
       await CartService.clearCart();
       cartEvents.emit("cartCleared");
       const statusText = status === "completed" ? "finalizado" : "em aberto";
@@ -181,6 +183,12 @@ export default function Cart() {
       />
 
       <View className="p-4 bg-secundaria-50">
+        <FormFieldProduct
+          title="Nome do Cliente"
+          value={nomeCliente}
+          handleChangeText={setnomeCliente}
+          placeholder="Digite o nome do cliente"
+        />
         <Text className="text-xl font-bold text-secundaria-900 mb-4">
           Total:{" "}
           {new Intl.NumberFormat("pt-BR", {

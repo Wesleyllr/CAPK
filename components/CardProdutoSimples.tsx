@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { TouchableOpacity, View, Text, Platform } from "react-native";
 import { Image } from "expo-image";
 
@@ -10,6 +10,12 @@ const CardProdutoSimples = ({
   onPress,
   quantity = 0,
 }) => {
+  const [localQuantity, setLocalQuantity] = useState(quantity);
+
+  useEffect(() => {
+    setLocalQuantity(quantity);
+  }, [quantity]);
+
   const formattedPrice = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -44,7 +50,7 @@ const CardProdutoSimples = ({
             style={{ backgroundColor: backgroundColor || "#e5e5e5" }}
           />
         )}
-        {quantity > 0 && (
+        {localQuantity > 0 && (
           <View
             className={`absolute top-2 right-2 bg-red-500 items-center justify-center ${
               Platform.OS === "web" ? "w-5 h-5" : "w-7 h-7"
@@ -55,7 +61,7 @@ const CardProdutoSimples = ({
                 Platform.OS === "web" ? "text-xs" : "text-base"
               }`}
             >
-              {quantity}
+              {localQuantity}
             </Text>
           </View>
         )}
