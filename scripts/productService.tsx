@@ -20,7 +20,8 @@ export const addProduct = async (
   date,
   imageUrl,
   codeBar,
-  selectedColor
+  selectedColor,
+  isVariablePrice
 ) => {
   try {
     const userId = ensureAuthenticated();
@@ -36,6 +37,7 @@ export const addProduct = async (
       imageUrl,
       codeBar,
       backgroundColor: selectedColor || null,
+      isVariablePrice,
     };
 
     await addDoc(productsRef, newProduct);

@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Alert, View, Text, TouchableOpacity, TextInput } from "react-native";
+import {
+  Alert,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Switch,
+} from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { uploadProductImage } from "@/scripts/uploadImage";
@@ -16,6 +23,7 @@ import CategoryDropdownWeb from "@/components/CategoryDropdownWeb";
 
 const CriarWeb = () => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isVariablePrice, setIsVariablePrice] = useState(false);
   const [productData, setProductData] = useState({
     title: "",
     description: "",
@@ -48,6 +56,13 @@ const CriarWeb = () => {
     }));
   };
 
+  const handleVariablePriceToggle = (value) => {
+    setIsVariablePrice(value);
+    if (value) {
+      setProductData((prev) => ({ ...prev, value: "" }));
+    }
+  };
+
   const handleAddProduct = async () => {
     if (!productData.imageUrl && !productData.backgroundColor) {
       Alert.alert("Erro", "Selecione uma imagem ou uma cor para o produto.");
@@ -70,7 +85,9 @@ const CriarWeb = () => {
         ? await uploadProductImage(productData.imageUrl)
         : "";
 
-      const finalValue = parseFloat(productData.value) / 100;
+      const finalValue = isVariablePrice
+        ? null
+        : parseFloat(productData.value) / 100;
       const finalCusto = parseFloat(productData.custo || "0") / 100;
 
       await addProduct(
@@ -82,7 +99,8 @@ const CriarWeb = () => {
         Timestamp.fromDate(new Date()),
         finalImageUrl,
         productData.codeBar,
-        productData.backgroundColor
+        productData.backgroundColor,
+        isVariablePrice
       );
 
       // Mensagem de sucesso
@@ -99,6 +117,7 @@ const CriarWeb = () => {
         codeBar: "",
         backgroundColor: null,
       });
+      setIsVariablePrice(false);
 
       // Emitindo evento para atualizar a lista
       eventBus.emit("produtoAtualizado");
@@ -285,13 +304,14 @@ const CriarWeb = () => {
               <View style={{ flexDirection: "row", gap: 16, marginBottom: 24 }}>
                 <FormFieldProduct
                   title="Preço de Venda"
-                  value={productData.value}
+                  value={isVariablePrice ? "" : productData.value}
                   handleChangeText={(text) => {
                     const rawValue = text.replace(/\D/g, "");
                     setProductData((prev) => ({ ...prev, value: rawValue }));
                   }}
                   placeholder="Preço de Venda"
                   monetario={true}
+                  disabled={isVariablePrice}
                 />
 
                 <FormFieldProduct
@@ -303,6 +323,21 @@ const CriarWeb = () => {
                   }}
                   placeholder="Custo (opcional)"
                   monetario={true}
+                />
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 24,
+                }}
+              >
+                <Text style={{ fontSize: 16, marginRight: 8 }}>
+                  Preço Variável
+                </Text>
+                <Switch
+                  value={isVariablePrice}
+                  onValueChange={handleVariablePriceToggle}
                 />
               </View>
               <View style={{ position: "relative", zIndex: 9999 }}>

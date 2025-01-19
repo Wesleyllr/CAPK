@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Platform } from "react-native";
+import { Platform, Modal, Button } from "react-native";
 import { cartEvents } from "../screens/Cart"; // Adicione este import
 import { ref, set } from "firebase/database"; // Adicione este import
+import VariablePriceModal from "@/components/VariablePriceModal ";
 
 import {
   View,
@@ -61,6 +62,11 @@ const Vender = () => {
   const [localCartCount, setLocalCartCount] = useState(0);
   const [nomeCliente, setnomeCliente] = useState("");
   const [forceUpdate, setForceUpdate] = useState(false);
+
+  const [variablePriceModalVisible, setVariablePriceModalVisible] =
+    useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [variablePrice, setVariablePrice] = useState("");
 
   useEffect(() => {
     const handleQuantityChange = ({ id, quantity }) => {
@@ -315,26 +321,32 @@ const Vender = () => {
       const existingItem = currentItems.find((item) => item.id === product.id);
       const newQty = (existingItem?.quantity || 0) + 1;
 
-      const cartItem: ICartItem = {
-        id: product.id,
-        title: product.title,
-        value: product.value,
-        quantity: 1,
-        imageUrl: product.imageUrl || undefined,
-        observations: "",
-      };
+      if (product.isVariablePrice && !existingItem) {
+        // Show modal to set price if it's a variable price product and not already in the cart
+        setVariablePriceModalVisible(true);
+        setSelectedProduct(product);
+      } else {
+        const cartItem: ICartItem = {
+          id: product.id,
+          title: product.title,
+          value: product.value,
+          quantity: newQty,
+          imageUrl: product.imageUrl || undefined,
+          observations: "",
+        };
 
-      await CartService.addItem(cartItem);
+        await CartService.addItem(cartItem);
 
-      // After successful cart update, update local states
-      setSelectedQuantities((prev) => ({
-        ...prev,
-        [product.id]: newQty,
-      }));
+        // After successful cart update, update local states
+        setSelectedQuantities((prev) => ({
+          ...prev,
+          [product.id]: newQty,
+        }));
 
-      // Update local cart count based on actual cart items
-      const updatedCount = await CartService.getItemCount();
-      setLocalCartCount(updatedCount);
+        // Update local cart count based on actual cart items
+        const updatedCount = await CartService.getItemCount();
+        setLocalCartCount(updatedCount);
+      }
     } catch (error) {
       alertaPersonalizado({
         message: "Erro",
@@ -345,6 +357,55 @@ const Vender = () => {
       setProcessingClicks((prev) => ({ ...prev, [product.id]: false }));
     }
   }, []);
+
+  const handleConfirmVariablePrice = async () => {
+    const cleanValue = variablePrice.replace(/[^\d,]/g, "").replace(",", ".");
+    const finalPrice = parseFloat(cleanValue);
+    if (!isNaN(finalPrice) && finalPrice > 0 && selectedProduct) {
+      const cartItem: ICartItem = {
+        id: selectedProduct.id,
+        title: selectedProduct.title,
+        value: finalPrice,
+        quantity: 1,
+        imageUrl: selectedProduct.imageUrl || undefined,
+        observations: "",
+      };
+
+      try {
+        await CartService.addItem(cartItem);
+
+        setSelectedQuantities((prev) => ({
+          ...prev,
+          [selectedProduct.id]: 1,
+        }));
+
+        const updatedCount = await CartService.getItemCount();
+        setLocalCartCount(updatedCount);
+
+        alertaPersonalizado({
+          message: "Sucesso",
+          description: "Produto adicionado ao carrinho",
+          type: "success",
+        });
+      } catch (error) {
+        alertaPersonalizado({
+          message: "Erro",
+          description: "Falha ao adicionar ao carrinho",
+          type: "danger",
+        });
+      } finally {
+        setVariablePriceModalVisible(false);
+        setVariablePrice("");
+        setSelectedProduct(null);
+      }
+    } else {
+      alertaPersonalizado({
+        message: "Erro",
+        description: "Por favor, insira um valor válido",
+        type: "warning",
+      });
+    }
+  };
 
   useEffect(() => {
     const syncCartCount = async () => {
@@ -597,6 +658,19 @@ const Vender = () => {
           </View>
         </View>
       )}
+
+      <VariablePriceModal
+        visible={variablePriceModalVisible}
+        onClose={() => {
+          setVariablePriceModalVisible(false);
+          setVariablePrice("");
+          setSelectedProduct(null);
+        }}
+        onConfirm={handleConfirmVariablePrice}
+        value={variablePrice}
+        onChange={setVariablePrice}
+        productTitle={selectedProduct?.title}
+      />
     </SafeAreaView>
   );
 };

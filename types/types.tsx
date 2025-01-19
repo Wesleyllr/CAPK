@@ -1,9 +1,10 @@
 export interface IProduct {
   id: string;
   title: string;
-  value: number;
+  value: number | null;
   imageUrl?: string;
   quantity: number;
+  isVariablePrice?: boolean;
 }
 
 export interface ICartItem extends IProduct {

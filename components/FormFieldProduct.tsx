@@ -10,6 +10,7 @@ type FormFieldProductProps = {
   keyboardType?: string;
   multiline?: boolean;
   monetario?: boolean;
+  disabled?: boolean;
 };
 
 const FormFieldProduct: React.FC<FormFieldProductProps> = ({
@@ -21,6 +22,7 @@ const FormFieldProduct: React.FC<FormFieldProductProps> = ({
   keyboardType = "default",
   multiline = false,
   monetario = false,
+  disabled = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -81,7 +83,7 @@ const FormFieldProduct: React.FC<FormFieldProductProps> = ({
           numberOfLines={multiline ? 4 : 1}
           value={displayValue} // Exibe o valor formatado ou vazio
           placeholder={placeholder}
-          placeholderTextColor="#553e3c"
+          placeholderTextColor={disabled ? "#a0a0a0" : "#553e3c"}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onChangeText={handleTextChange} // Atualiza o estado
@@ -89,6 +91,7 @@ const FormFieldProduct: React.FC<FormFieldProductProps> = ({
           multiline={multiline}
           textAlignVertical="bottom"
           scrollEnabled={multiline}
+          editable={!disabled} // Disable input when disabled is true
         />
       </View>
       <View
