@@ -8,6 +8,7 @@ import { getFirestore } from "firebase/firestore"; // Importa o Firestore
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native"; // Importa Platform
 import { getStorage } from "firebase/storage";
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsOvBG67DfpdhNzy72bo_dG91DnSQjYfE",
@@ -17,6 +18,7 @@ const firebaseConfig = {
   messagingSenderId: "272073001168",
   appId: "1:272073001168:web:4d2e1a3b76a64f7e2176d5",
   measurementId: "G-TFVKQ9EVCD",
+  databaseURL: "https://pjfirebase-30a91-default-rtdb.firebaseio.com", // Adicione o URL do Realtime Database
 };
 
 const app = initializeApp(firebaseConfig);
@@ -36,4 +38,7 @@ const auth = initializeAuth(app, {
 // Inicializa o Firestore
 const db = getFirestore(app);
 
-export { auth, db, storage }; // Exporta tanto o Auth quanto o Firestore
+// Inicializa o Realtime Database
+const rtdb = getDatabase(app);
+
+export { auth, db, storage, rtdb }; // Exporta tanto o Auth quanto o Firestore e o Realtime Database

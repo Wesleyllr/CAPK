@@ -201,7 +201,8 @@ const Home = () => {
       >
         <View className="flex-row justify-between mb-2">
           <Text className="flex-1 text-secundaria-900 font-bold">
-            Pedido #{order.id.slice(-6)}
+            Pedido #{order.idOrder.slice(-4)} -{" "}
+            {order.nomeCliente || "SEM NOME"}
           </Text>
           <Text className="text-quinta font-bold">
             {new Intl.NumberFormat("pt-BR", {
@@ -270,7 +271,7 @@ const Home = () => {
             <Ionicons name="notifications-outline" size={20} color="#7f5d5a" />
           </TouchableOpacity>
         </View>
-        <View className="flex-row mb-6">
+        <View className="flex-row mb-6 justify-between">
           <StatCard title="Hoje" value={salesData.daily} />
           <StatCard title="Semana" value={salesData.weekly} />
           <StatCard title="Mês" value={salesData.monthly} />

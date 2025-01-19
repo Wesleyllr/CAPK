@@ -22,7 +22,6 @@ import { db, auth } from "@/firebaseConfig";
 import { Timestamp } from "firebase/firestore";
 import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
-
 const Criar = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -193,56 +192,55 @@ const Criar = () => {
           otherStyles="px-4"
         />
 
-<View className="w-full h-36 mt-2 justify-center items-center flex-row px-4 gap-2">
-  <View className="w-36 h-36 rounded-xl bg-secundaria-300 justify-center items-center">
-    {selectedImage ? (
-      <TouchableOpacity
-        onPress={handleClearSelection}
-        className="w-full h-full"
-      >
-        <Image
-          source={{ uri: selectedImage }}
-          className="w-full h-full rounded-xl"
-          contentFit="contain"
-        />
-        <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
-          <Text className="text-white text-xs">X</Text>
+        <View className="w-full h-36 mt-2 justify-center items-center flex-row px-4 gap-2">
+          <View className="w-36 h-36 rounded-xl bg-secundaria-300 justify-center items-center">
+            {selectedImage ? (
+              <TouchableOpacity
+                onPress={handleClearSelection}
+                className="w-full h-full"
+              >
+                <Image
+                  source={{ uri: selectedImage }}
+                  className="w-full h-full rounded-xl"
+                  contentFit="contain"
+                />
+                <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
+                  <Text className="text-white text-xs">X</Text>
+                </View>
+              </TouchableOpacity>
+            ) : selectedColor ? (
+              // Mostra a cor selecionada
+              <TouchableOpacity
+                onPress={handleClearSelection}
+                className="w-full h-full"
+              >
+                <View
+                  className="w-full h-full rounded-xl"
+                  style={{ backgroundColor: selectedColor }} // Exibe a cor
+                />
+                <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
+                  <Text className="text-white text-xs">X</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={handleSelectImage}
+                className="bg-black w-full h-full rounded-xl justify-center"
+              >
+                <Text className="text-white text-center">
+                  Selecione uma imagem ou cor
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <View className="flex-1 h-36 bg-secundaria-300 border border-secundaria-700 rounded-xl justify-center">
+            <ColorSelector
+              selectedColor={selectedColor}
+              setSelectedColor={setSelectedColor}
+              onColorSelect={handleColorSelect}
+            />
+          </View>
         </View>
-      </TouchableOpacity>
-    ) : selectedColor ? (
-      // Mostra a cor selecionada
-      <TouchableOpacity
-        onPress={handleClearSelection}
-        className="w-full h-full"
-      >
-        <View
-          className="w-full h-full rounded-xl"
-          style={{ backgroundColor: selectedColor }} // Exibe a cor
-        />
-        <View className="absolute top-2 right-2 bg-black/50 rounded-full px-2 py-1">
-          <Text className="text-white text-xs">X</Text>
-        </View>
-      </TouchableOpacity>
-    ) : (
-      <TouchableOpacity
-        onPress={handleSelectImage}
-        className="bg-black w-full h-full rounded-xl justify-center"
-      >
-        <Text className="text-white text-center">
-          Selecione uma imagem ou cor
-        </Text>
-      </TouchableOpacity>
-    )}
-  </View>
-  <View className="flex-1 h-36 bg-secundaria-300 border border-secundaria-700 rounded-xl justify-center">
-    <ColorSelector
-      selectedColor={selectedColor}
-      setSelectedColor={setSelectedColor}
-      onColorSelect={handleColorSelect}
-    />
-  </View>
-</View>
-
 
         {isUploading ? (
           <ActivityIndicator size="large" color="#0000ff" />

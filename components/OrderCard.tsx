@@ -2,7 +2,12 @@ import React, { memo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { IOrder } from "@/types/types";
 import { OrderStatus } from "@/types/types";
-import { formatCurrency, formatDateHour } from "@/utils/formatters";
+import {
+  formatCurrency,
+  formatDateHour,
+  formatHourMinute,
+  formatDate,
+} from "@/utils/formatters";
 import { CONSTANTS } from "@/constants/constants";
 
 interface OrderCardProps {
@@ -12,7 +17,9 @@ interface OrderCardProps {
 }
 
 const OrderCard = memo(({ order, onPress, onStatusUpdate }: OrderCardProps) => {
-  const formattedDate = formatDateHour(order.createdAt);
+  const formattedDate = formatDate(order.createdAt);
+  const formattedHour = formatHourMinute(order.createdAt);
+
   const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -23,19 +30,24 @@ const OrderCard = memo(({ order, onPress, onStatusUpdate }: OrderCardProps) => {
       accessibilityHint="Toque para ver detalhes do pedido"
     >
       <View className="bg-secundaria-50 p-4 rounded-lg mb-3">
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-secundaria-900 font-bold">
-            Pedido #{order.id.slice(-CONSTANTS.SLICE_LENGTH)}
+        <View className="flex-row justify-between">
+          <Text className="text-secundaria-900 font-bold text-2xl">
+            {order.idOrder.slice(-4)} - {order.nomeCliente || "SEM NOME"}
           </Text>
-          <Text className="text-quinta">{formatCurrency(order.total)}</Text>
+          <Text className="text-quinta text-2xl">
+            {formatCurrency(order.total)}
+          </Text>
         </View>
 
-        <View className="mb-2">
+        <View>
+          <Text className="text-quinta font-bold text-lg">{formattedHour}</Text>
           <Text className="text-quinta">{formattedDate}</Text>
-          <Text className="text-quinta">{totalItems} itens</Text>
+          <Text className="text-quinta">
+            {totalItems} {totalItems === 1 ? "item" : "itens"}
+          </Text>
         </View>
 
-        <View className="flex-row justify-end gap-2">
+        <View className="flex-row justify-end gap-4">
           {order.status === "pending" ? (
             <>
               <TouchableOpacity
@@ -43,23 +55,23 @@ const OrderCard = memo(({ order, onPress, onStatusUpdate }: OrderCardProps) => {
                 className="bg-sexta px-4 py-2 rounded"
                 accessibilityLabel="Cancelar pedido"
               >
-                <Text className="text-primaria">Cancelar</Text>
+                <Text className="text-primaria text-lg">Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => onStatusUpdate(order.id, "completed")}
                 className="bg-green-600 px-4 py-2 rounded"
                 accessibilityLabel="Finalizar pedido"
               >
-                <Text className="text-primaria">Finalizar</Text>
+                <Text className="text-primaria text-lg">Finalizar</Text>
               </TouchableOpacity>
             </>
           ) : (
             <TouchableOpacity
               onPress={() => onStatusUpdate(order.id, "canceled")}
               className="bg-sexta px-4 py-2 rounded"
-              accessibilityLabel="Cancelar pedido"
+              accessibilityLabel="Estornar pedido"
             >
-              <Text className="text-primaria">Cancelar</Text>
+              <Text className="text-primaria text-lg">Estornar</Text>
             </TouchableOpacity>
           )}
         </View>

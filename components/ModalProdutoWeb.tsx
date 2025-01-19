@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Modal, ScrollView, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Modal,
+  ScrollView,
+  Platform,
+  TouchableOpacity,
+} from "react-native";
 import { Image } from "react-native";
 import { getUserCategories } from "@/userService";
 

@@ -22,3 +22,11 @@ export const formatDateHour = (date: Date | Timestamp) => {
     minute: "2-digit",
   })}`;
 };
+
+export const formatHourMinute = (date: Date | Timestamp) => {
+  const formattedDate = date instanceof Timestamp ? date.toDate() : date;
+  return formattedDate.toLocaleTimeString(CONSTANTS.DATE_LOCALE, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};

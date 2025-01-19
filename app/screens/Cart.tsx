@@ -13,6 +13,7 @@ import EventEmitter from "eventemitter3";
 import eventBus from "@/utils/eventBus";
 import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 import FormFieldProduct from "@/components/FormFieldProduct";
+import { NotificationService } from "@/services/notificationService";
 
 // Criar uma instância global do EventEmitter
 export const cartEvents = new EventEmitter();
@@ -111,13 +112,22 @@ export default function Cart() {
 
   const handleOrder = async (status: "completed" | "pending") => {
     try {
-      const orderId = await OrderService.createOrder(items, total, status, nomeCliente);
+      const { orderRefId, idOrder } = await OrderService.createOrder(
+        items,
+        total,
+        status,
+        nomeCliente
+      );
+
+      // Envia notificação de novo pedido
+      await NotificationService.sendOrderCreatedNotification();
+
       await CartService.clearCart();
       cartEvents.emit("cartCleared");
       const statusText = status === "completed" ? "finalizado" : "em aberto";
       alertaPersonalizado({
         message: "Sucesso",
-        description: `Pedido #${orderId} ${statusText}!`,
+        description: `Pedido #${idOrder} ${statusText}!`,
         type: "success",
       });
       eventBus.emit("pedidoAtualizado");

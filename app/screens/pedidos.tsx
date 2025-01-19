@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db, auth } from "@/firebaseConfig";
+import { db, auth, rtdb } from "@/firebaseConfig";
 import { IOrder } from "@/types/types";
 import { OrderStatus } from "@/types/types";
 import { useOrders } from "@/hooks/useOrders";
 import OrderCard from "@/components/OrderCard";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import eventBus from "@/utils/eventBus";
+import { onValue, ref } from "firebase/database";
+import { NotificationService } from "@/services/notificationService";
 
 export default function Pedidos() {
   const [showPending, setShowPending] = useState(true);
@@ -111,6 +113,55 @@ export default function Pedidos() {
     ),
     [handleOrderPress, updateOrderStatus]
   );
+
+  useEffect(() => {
+    // Inscreve-se nas notificações de pedidos
+    const unsubscribe = NotificationService.subscribeToOrderNotifications(
+      async (notification) => {
+        if (notification.status === "PENDING_REFRESH") {
+          await fetchOrders();
+          // Confirma que o refresh foi realizado
+          await NotificationService.confirmOrderRefresh();
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    const handlePedidoAtualizado = () => {
+      fetchOrders();
+    };
+
+    eventBus.on("pedidoAtualizado", handlePedidoAtualizado);
+
+    return () => {
+      eventBus.off("pedidoAtualizado", handlePedidoAtualizado);
+    };
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    const ordersRef = ref(rtdb, "orders");
+    const unsubscribe = onValue(ordersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        fetchOrders();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    const ordersRef = ref(rtdb, "orders/refresh");
+    const unsubscribe = onValue(ordersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        fetchOrders();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [fetchOrders]);
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">

@@ -19,27 +19,27 @@ const defaultStyles = {
 
 export const alertaPersonalizado = (message) => {
   // If message is a string, convert it to an object
-  const messageObj = typeof message === 'string' ? { message } : message;
+  const messageObj = typeof message === "string" ? { message } : message;
 
   if (messageObj.buttons) {
     // Use native Alert for button-based alerts
     Alert.alert(
-      messageObj.message || '',
-      messageObj.description || '',
+      messageObj.message || "",
+      messageObj.description || "",
       messageObj.buttons,
       { cancelable: true }
     );
   } else {
     // Use FlashMessage for toast-style alerts
     showMessage({
-      message: messageObj.message || '',
-      description: messageObj.description || '',
-      type: messageObj.type || 'default',
+      message: messageObj.message || "",
+      description: messageObj.description || "",
+      type: messageObj.type || "default",
       ...defaultStyles,
       ...messageObj,
       duration: messageObj.duration || 3000,
       floating: true,
-      position: messageObj.position || 'bottom',
+      position: messageObj.position || "bottom",
     });
   }
 };

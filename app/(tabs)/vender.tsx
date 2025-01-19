@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Platform } from "react-native";
 import { cartEvents } from "../screens/Cart"; // Adicione este import
+import { ref, set } from "firebase/database"; // Adicione este import
 
 import {
   View,
@@ -29,6 +30,9 @@ import eventBus from "@/utils/eventBus";
 import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 import FormFieldProduct from "@/components/FormFieldProduct";
 import { OrderService } from "@/services/OrderService";
+import CardProdutoSimplesV2 from "@/components/CardProdutoSimplesV2";
+import { rtdb } from "@/firebaseConfig";
+import { NotificationService } from "@/services/notificationService";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5;
@@ -46,10 +50,14 @@ const Vender = () => {
   const [cartCount, setCartCount] = useState(0);
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
-  const [viewMode, setViewMode] = useState("grid"); // "grid" ou "list"
-  const [processingClicks, setProcessingClicks] = useState<Record<string, boolean>>({});
+  const [viewMode, setViewMode] = useState("grid"); // "grid", "list" ou "simple"
+  const [processingClicks, setProcessingClicks] = useState<
+    Record<string, boolean>
+  >({});
 
-  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [selectedQuantities, setSelectedQuantities] = useState<
+    Record<string, number>
+  >({});
   const [localCartCount, setLocalCartCount] = useState(0);
   const [nomeCliente, setnomeCliente] = useState("");
   const [forceUpdate, setForceUpdate] = useState(false);
@@ -86,7 +94,7 @@ const Vender = () => {
       setSelectedQuantities({});
       setLocalCartCount(0);
       await CartService.clearCart();
-      setForceUpdate(prev => !prev); // Força a re-renderização
+      setForceUpdate((prev) => !prev); // Força a re-renderização
     } catch (error) {
       alertaPersonalizado({
         message: "Erro",
@@ -98,20 +106,27 @@ const Vender = () => {
 
   const getNumColumns = () => {
     if (Platform.OS === "web") {
-      if (viewMode === "list") return 2; // Exibe 2 colunas para "list" na web
-      if (width > 1400) return 7; // Telas muito grandes
-      if (width > 1100) return 5; // Telas grandes
-      if (width > 800) return 4; // Telas médias
-      return 3; // Telas pequenas
+      if (viewMode === "list") return 2; // Exibe 1 coluna para "list" na web
+      if (viewMode === "simple") return 2; // Exibe 1 coluna para "simple" na web
+      if (viewMode === "grid") {
+        if (width > 1400) return 7; // Telas muito grandes
+        if (width > 1100) return 5; // Telas grandes
+        if (width > 800) return 4; // Telas médias
+        return 3; // Telas pequenas
+      }
     }
-    if (viewMode === "list") return 1; // Mobile (iOS/Android)
-    return 3; // Mobile padrão
+    if (Platform.OS !== "web") {
+      if (viewMode === "list") return 1; // Exibe 1 coluna para "list" em mobile
+      if (viewMode === "simple") return 1; // Exibe 1 coluna para "simple" em mobile
+      return 3; // Mobile padrão para "grid"
+    }
   };
 
   const numColumns = getNumColumns();
 
   const toggleViewMode = async () => {
-    const newMode = viewMode === "grid" ? "list" : "grid";
+    const newMode =
+      viewMode === "grid" ? "list" : viewMode === "list" ? "simple" : "grid";
     setViewMode(newMode);
     try {
       await AsyncStorage.setItem(VIEW_MODE_KEY, newMode);
@@ -291,15 +306,15 @@ const Vender = () => {
     if (processingClicks[product.id]) {
       return;
     }
-  
-    setProcessingClicks(prev => ({ ...prev, [product.id]: true }));
-  
+
+    setProcessingClicks((prev) => ({ ...prev, [product.id]: true }));
+
     try {
       // Get current quantity from cart service first
       const currentItems = await CartService.getItems();
-      const existingItem = currentItems.find(item => item.id === product.id);
+      const existingItem = currentItems.find((item) => item.id === product.id);
       const newQty = (existingItem?.quantity || 0) + 1;
-  
+
       const cartItem: ICartItem = {
         id: product.id,
         title: product.title,
@@ -308,19 +323,18 @@ const Vender = () => {
         imageUrl: product.imageUrl || undefined,
         observations: "",
       };
-  
+
       await CartService.addItem(cartItem);
-  
+
       // After successful cart update, update local states
-      setSelectedQuantities(prev => ({
+      setSelectedQuantities((prev) => ({
         ...prev,
-        [product.id]: newQty
+        [product.id]: newQty,
       }));
-  
+
       // Update local cart count based on actual cart items
       const updatedCount = await CartService.getItemCount();
       setLocalCartCount(updatedCount);
-  
     } catch (error) {
       alertaPersonalizado({
         message: "Erro",
@@ -328,47 +342,61 @@ const Vender = () => {
         type: "danger",
       });
     } finally {
-      setProcessingClicks(prev => ({ ...prev, [product.id]: false }));
+      setProcessingClicks((prev) => ({ ...prev, [product.id]: false }));
     }
   }, []);
 
   useEffect(() => {
-  const syncCartCount = async () => {
-    const count = await CartService.getItemCount();
-    setLocalCartCount(count);
-    setForceUpdate(prev => !prev); // Força a re-renderização
-  };
+    const syncCartCount = async () => {
+      const count = await CartService.getItemCount();
+      setLocalCartCount(count);
+      setForceUpdate((prev) => !prev); // Força a re-renderização
+    };
 
-  // Sync on mount and when cart events occur
-  syncCartCount();
-  
-  const handleCartUpdate = () => {
+    // Sync on mount and when cart events occur
     syncCartCount();
-  };
 
-  cartEvents.on('quantityChanged', handleCartUpdate);
-  cartEvents.on('cartCleared', handleCartUpdate);
+    const handleCartUpdate = () => {
+      syncCartCount();
+    };
 
-  return () => {
-    cartEvents.off('quantityChanged', handleCartUpdate);
-    cartEvents.off('cartCleared', handleCartUpdate);
-  };
-}, []);
+    cartEvents.on("quantityChanged", handleCartUpdate);
+    cartEvents.on("cartCleared", handleCartUpdate);
+
+    return () => {
+      cartEvents.off("quantityChanged", handleCartUpdate);
+      cartEvents.off("cartCleared", handleCartUpdate);
+    };
+  }, []);
 
   const handleOrder = async (status: "completed" | "pending") => {
     try {
       const items = await CartService.getItems();
-      const total = items.reduce((sum, item) => sum + item.value * item.quantity, 0);
-      const orderId = await OrderService.createOrder(items, total, status, nomeCliente);
+      const total = items.reduce(
+        (sum, item) => sum + item.value * item.quantity,
+        0
+      );
+      const { orderRefId, idOrder } = await OrderService.createOrder(
+        items,
+        total,
+        status,
+        nomeCliente
+      );
+
+      // Envia notificação de novo pedido
+      await NotificationService.sendOrderCreatedNotification();
+
       await CartService.clearCart();
       cartEvents.emit("cartCleared");
+      eventBus.emit("pedidoAtualizado");
+
       const statusText = status === "completed" ? "finalizado" : "em aberto";
       alertaPersonalizado({
         message: "Sucesso",
-        description: `Pedido #${orderId} ${statusText}!`,
+        description: `Pedido ${idOrder} ${statusText}!`,
         type: "success",
       });
-      eventBus.emit("pedidoAtualizado");
+
       router.back();
     } catch (error) {
       alertaPersonalizado({
@@ -379,12 +407,33 @@ const Vender = () => {
     }
   };
 
-  const renderProduct = useCallback(({ item }) => {
-    const quantity = selectedQuantities[item.id] || 0;
+  const renderProduct = useCallback(
+    ({ item }) => {
+      const quantity = selectedQuantities[item.id] || 0;
 
-    if (viewMode === "list") {
+      if (viewMode === "list") {
+        return (
+          <CardProdutoSimples
+            title={item.title}
+            price={item.value}
+            imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
+            backgroundColor={item.backgroundColor}
+            onPress={() => handleProductPress(item)}
+            quantity={quantity}
+          />
+        );
+      } else if (viewMode === "simple") {
+        return (
+          <CardProdutoSimplesV2
+            title={item.title}
+            price={item.value}
+            onPress={() => handleProductPress(item)}
+            quantity={quantity}
+          />
+        );
+      }
       return (
-        <CardProdutoSimples
+        <CardProduto1
           title={item.title}
           price={item.value}
           imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
@@ -393,18 +442,9 @@ const Vender = () => {
           quantity={quantity}
         />
       );
-    }
-    return (
-      <CardProduto1
-        title={item.title}
-        price={item.value}
-        imageSource={item.imageUrl ? { uri: item.imageUrl } : null}
-        backgroundColor={item.backgroundColor}
-        onPress={() => handleProductPress(item)}
-        quantity={quantity}
-      />
-    );
-  }, [handleProductPress, selectedQuantities, viewMode]);
+    },
+    [handleProductPress, selectedQuantities, viewMode]
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-primaria flex-col">
@@ -456,7 +496,9 @@ const Vender = () => {
               {/* CONTADOR PARA VERSÃO WEB */}
               {Platform.OS === "web" && (
                 <View className="h-12 w-12 mr-2 bg-red-500 justify-center items-center rounded-full">
-                  <Text className="mx-2 text-xl font-bold text-white">{localCartCount}</Text>
+                  <Text className="mx-2 text-xl font-bold text-white">
+                    {localCartCount}
+                  </Text>
                 </View>
               )}
               <TouchableOpacity onPress={toggleViewMode} className="h-10 w-10 ">

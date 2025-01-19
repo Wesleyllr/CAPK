@@ -18,7 +18,6 @@ import { getUserInfo } from "@/userService";
 import { Ionicons } from "@expo/vector-icons";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 const CACHE_KEY = "user_products_cache";
 const VIEW_MODE_KEY = "products_view_mode";
 
@@ -81,11 +80,7 @@ const Perfil = () => {
       });
     } catch (error) {
       console.error("Erro ao carregar informações do usuário:", error);
-      alertaPersonalizado({
-        message: "Erro",
-        description: "Falha ao carregar informações do usuário",
-        type: "danger",
-      });
+      Alert.alert("Erro", "Falha ao carregar informações do usuário");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -113,40 +108,32 @@ const Perfil = () => {
       await signOut(auth);
       router.replace("/login");
     } catch (error) {
-      alertaPersonalizado({
-        message: "Erro",
-        description: "Falha ao realizar logout",
-        type: "danger",
-      });
+      Alert.alert("Erro", "Falha ao realizar logout");
     }
   };
 
   const handleLogout = async () => {
+    // Skip confirmation for web version
     if (Platform.OS === "web") {
       performLogout();
       return;
     }
 
+    // Show confirmation dialog for mobile versions
     if (hasUnsavedChanges) {
-      alertaPersonalizado({
-        message: "Alterações não salvas",
-        description: "Você tem alterações não salvas. Deseja sair mesmo assim?",
-        type: "warning",
-        buttons: [
+      Alert.alert(
+        "Alterações não salvas",
+        "Você tem alterações não salvas. Deseja sair mesmo assim?",
+        [
           { text: "Cancelar", style: "cancel" },
           { text: "Sair", style: "destructive", onPress: performLogout },
-        ],
-      });
+        ]
+      );
     } else {
-      alertaPersonalizado({
-        message: "Sair",
-        description: "Deseja realmente sair?",
-        type: "warning",
-        buttons: [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Sair", style: "destructive", onPress: performLogout },
-        ],
-      });
+      Alert.alert("Sair", "Deseja realmente sair?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Sair", style: "destructive", onPress: performLogout },
+      ]);
     }
   };
 

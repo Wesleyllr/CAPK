@@ -49,6 +49,17 @@ export const getUserCategories = async () => {
   }
 };
 
+// Função para obter o UID do usuário
+export const getUserUid = async () => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("Usuário não está autenticado.");
+  }
+
+  return user.uid;
+};
+
 export const addUserCategory = async (categoryName) => {
   const user = auth.currentUser;
 
@@ -76,5 +87,36 @@ export const addUserCategory = async (categoryName) => {
     };
   } catch (error) {
     throw new Error("Erro ao adicionar a categoria: " + error.message);
+  }
+};
+
+// Função para atualizar o contador de pedidos
+export const updateOrderCounter = async () => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("Usuário não está autenticado.");
+  }
+
+  // Referência ao contador de pedidos
+  const counterRef = doc(
+    collection(db, `users/${user.uid}/counter/orderCounter`)
+  );
+
+  try {
+    const counterSnap = await getDoc(counterRef);
+
+    if (counterSnap.exists()) {
+      const currentCount = counterSnap.data().count || 0;
+      await setDoc(counterRef, { count: currentCount + 1 });
+      return currentCount + 1;
+    } else {
+      await setDoc(counterRef, { count: 1 });
+      return 1;
+    }
+  } catch (error) {
+    throw new Error(
+      "Erro ao atualizar o contador de pedidos: " + error.message
+    );
   }
 };
