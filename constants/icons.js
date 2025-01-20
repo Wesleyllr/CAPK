@@ -19,6 +19,7 @@ import cancel from "../assets/icons/cancel.png";
 import save from "../assets/icons/save.png";
 import view_list from "../assets/icons/view_list.png";
 import view_grid from "../assets/icons/view_grid.png";
+import deletar from "../assets/icons/delete.png";
 
 export default {
   play,
@@ -42,4 +43,5 @@ export default {
   save,
   view_list,
   view_grid,
+  deletar,
 };

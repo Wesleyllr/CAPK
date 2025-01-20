@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
+  TextInput,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -20,6 +22,10 @@ import ModalProduto from "@/components/ModalProduto";
 import eventBus from "@/utils/eventBus";
 import { showMessage } from "react-native-flash-message";
 import ModalProdutoWeb from "@/components/ModalProdutoWeb";
+import { getUserCategories } from "@/userService";
+import { Image } from "expo-image";
+import { icons } from "@/constants";
+import { getColor } from "@/colors";
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5; // 5 minutes
@@ -35,6 +41,9 @@ const Produtos = () => {
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
 
   const getNumColumns = () => {
     if (viewMode === "list") {
@@ -230,6 +239,55 @@ const Produtos = () => {
     </TouchableOpacity>
   );
 
+  const fetchCategories = async () => {
+    try {
+      const userCategories = await getUserCategories();
+      setCategories(userCategories);
+    } catch (error) {
+      showMessage({
+        message: "Erro ao carregar categorias.",
+        type: "danger",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const filteredAndSortedProducts = useMemo(() => {
+    return products
+      .filter((product) => {
+        const matchesSearch = product.title
+          .toLowerCase()
+          .includes(searchText.toLowerCase());
+        const matchesCategory = selectedCategory
+          ? product.category === selectedCategory
+          : true;
+        return matchesSearch && matchesCategory;
+      })
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }, [products, searchText, selectedCategory]);
+
+  const CategoryButton = ({ name, isSelected, onPress }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      className={`px-4 py-3 rounded-3xl mr-2 ${
+        isSelected
+          ? "bg-terceira-500 shadow-lg border border-terceira-700"
+          : "bg-terceira-100 hover:bg-secundaria-200"
+      }`}
+    >
+      <Text
+        className={`text-center font-medium ${
+          isSelected ? "text-white" : "text-secundaria-700"
+        }`}
+      >
+        {name}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-primaria">
       <Header
@@ -239,8 +297,30 @@ const Produtos = () => {
         onToggleView={toggleViewMode}
       />
 
+      <View className="w-full h-12 mt-2">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="px-4"
+        >
+          <CategoryButton
+            name="Todos"
+            isSelected={!selectedCategory}
+            onPress={() => setSelectedCategory(null)}
+          />
+          {categories.map((category) => (
+            <CategoryButton
+              key={category.id}
+              name={category.name}
+              isSelected={selectedCategory === category.id}
+              onPress={() => setSelectedCategory(category.id)}
+            />
+          ))}
+        </ScrollView>
+      </View>
+
       <FlatList
-        data={products}
+        data={filteredAndSortedProducts}
         renderItem={renderProduct}
         keyExtractor={(item) => item.id}
         numColumns={numColumns}
@@ -252,6 +332,36 @@ const Produtos = () => {
         }}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        }
+        ListHeaderComponent={
+          <View
+            className={`px-4 mb-2 flex-row items-center ${
+              Platform.OS === "web" ? "w-full mx-auto" : ""
+            }`}
+          >
+            <TextInput
+              className="h-12 px-3 flex-1 mr-2 bg-white rounded border border-gray-300"
+              placeholder="Buscar produto..."
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+            <TouchableOpacity onPress={toggleViewMode} className="h-10 w-10 ">
+              <View
+                className={`w-10 h-10 rounded-lg ${
+                  Platform.OS === "web" ? "bg-secundaria-500" : ""
+                }`}
+              >
+                <Image
+                  source={
+                    viewMode === "grid" ? icons.view_grid : icons.view_list
+                  }
+                  className="flex-1"
+                  contentFit="contain"
+                  tintColor={getColor("secundaria-500")}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
         }
         ListEmptyComponent={() => (
           <Text className="text-center mt-4">

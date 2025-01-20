@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -27,6 +28,7 @@ const EditarProduto = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isVariablePrice, setIsVariablePrice] = useState(false);
   const [productData, setProductData] = useState({
     title: "",
     description: "",
@@ -95,6 +97,7 @@ const EditarProduto = () => {
             codeBar: data.codeBar || "",
             backgroundColor: data.backgroundColor || null,
           });
+          setIsVariablePrice(data.isVariablePrice || false);
         }
       } catch (error) {
         alertaPersonalizado({
@@ -172,6 +175,13 @@ const EditarProduto = () => {
     }
   };
 
+  const handleVariablePriceToggle = (value) => {
+    setIsVariablePrice(value);
+    if (value) {
+      setProductData((prev) => ({ ...prev, value: "" }));
+    }
+  };
+
   const handleSaveProduct = async () => {
     try {
       setIsSaving(true);
@@ -187,7 +197,8 @@ const EditarProduto = () => {
         productData.category !== initialProductData.category ||
         productData.imageUrl !== initialProductData.imageUrl ||
         productData.codeBar !== initialProductData.codeBar ||
-        productData.backgroundColor !== initialProductData.backgroundColor;
+        productData.backgroundColor !== initialProductData.backgroundColor ||
+        isVariablePrice !== initialProductData.isVariablePrice;
 
       if (!hasChanges) {
         alertaPersonalizado({
@@ -223,6 +234,7 @@ const EditarProduto = () => {
         imageUrl: finalImageUrl,
         codeBar: productData.codeBar,
         backgroundColor: productData.backgroundColor,
+        isVariablePrice,
       });
 
       alertaPersonalizado({
@@ -351,6 +363,14 @@ const EditarProduto = () => {
               multiline={true}
             />
 
+            <View className="flex-row items-center mb-4">
+              <Text className="text-lg mr-2">Preço Variável</Text>
+              <Switch
+                value={isVariablePrice}
+                onValueChange={handleVariablePriceToggle}
+              />
+            </View>
+
             <View className="flex-row gap-4">
               <View className="flex-1">
                 <FormFieldProduct
@@ -362,6 +382,7 @@ const EditarProduto = () => {
                   }}
                   placeholder="Preço de Venda"
                   monetario={true}
+                  disabled={isVariablePrice}
                 />
               </View>
               <View className="flex-1">

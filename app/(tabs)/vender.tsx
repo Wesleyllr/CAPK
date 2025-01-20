@@ -318,30 +318,35 @@ const Vender = () => {
     setProcessingClicks((prev) => ({ ...prev, [product.id]: true }));
 
     try {
-      const cartItem: ICartItem = {
-        id: product.id,
-        title: product.title,
-        value: product.value,
-        quantity: 1,
-        imageUrl: product.imageUrl || undefined,
-        observations: "",
-        categoryId: product.category || "sem categoria",
-      };
+      if (product.isVariablePrice) {
+        setSelectedProduct(product);
+        setVariablePriceModalVisible(true);
+      } else {
+        const cartItem: ICartItem = {
+          id: product.id,
+          title: product.title,
+          value: product.value,
+          quantity: 1,
+          imageUrl: product.imageUrl || undefined,
+          observations: "",
+          categoryId: product.category || "sem categoria",
+        };
 
-      await CartService.addItem(cartItem);
+        await CartService.addItem(cartItem);
 
-      // Atualiza a contagem local após a adição
-      const updatedCount = await CartService.getItemCount();
-      setLocalCartCount(updatedCount);
+        // Atualiza a contagem local após a adição
+        const updatedCount = await CartService.getItemCount();
+        setLocalCartCount(updatedCount);
 
-      // Atualiza as quantidades selecionadas
-      const currentItems = await CartService.getItems();
-      const updatedItem = currentItems.find((item) => item.id === product.id);
-      if (updatedItem) {
-        setSelectedQuantities((prev) => ({
-          ...prev,
-          [product.id]: updatedItem.quantity,
-        }));
+        // Atualiza as quantidades selecionadas
+        const currentItems = await CartService.getItems();
+        const updatedItem = currentItems.find((item) => item.id === product.id);
+        if (updatedItem) {
+          setSelectedQuantities((prev) => ({
+            ...prev,
+            [product.id]: updatedItem.quantity,
+          }));
+        }
       }
     } catch (error) {
       alertaPersonalizado({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Alert, View, Text, TouchableOpacity } from "react-native";
+import { Alert, View, Text, TouchableOpacity, Switch } from "react-native";
 import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -18,6 +18,7 @@ const EditarProdutoWeb = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isVariablePrice, setIsVariablePrice] = useState(false);
   const [productData, setProductData] = useState({
     title: "",
     description: "",
@@ -72,6 +73,7 @@ const EditarProdutoWeb = () => {
           };
           setProductData(productState);
           setInitialProductData(productState);
+          setIsVariablePrice(data.isVariablePrice || false);
         }
       } catch (error) {
         Alert.alert("Erro", "Falha ao carregar dados do produto.");
@@ -100,6 +102,13 @@ const EditarProdutoWeb = () => {
       backgroundColor: color,
       imageUrl: "",
     }));
+  };
+
+  const handleVariablePriceToggle = (value) => {
+    setIsVariablePrice(value);
+    if (value) {
+      setProductData((prev) => ({ ...prev, value: "" }));
+    }
   };
 
   const handleDeleteProduct = () => {
@@ -159,7 +168,9 @@ const EditarProdutoWeb = () => {
         finalImageUrl = await uploadProductImage(productData.imageUrl);
       }
 
-      const finalValue = parseFloat(productData.value) / 100;
+      const finalValue = isVariablePrice
+        ? null
+        : parseFloat(productData.value) / 100;
       const finalCusto = parseFloat(productData.custo || "0") / 100;
 
       const productRef = doc(
@@ -178,6 +189,7 @@ const EditarProdutoWeb = () => {
         imageUrl: finalImageUrl,
         codeBar: productData.codeBar,
         backgroundColor: productData.backgroundColor,
+        isVariablePrice,
       });
 
       Alert.alert("Sucesso", "Produto atualizado com sucesso.");
@@ -377,6 +389,22 @@ const EditarProdutoWeb = () => {
                 />
               </View>
 
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 24,
+                }}
+              >
+                <Text style={{ fontSize: 16, marginRight: 8 }}>
+                  Preço Variável
+                </Text>
+                <Switch
+                  value={isVariablePrice}
+                  onValueChange={handleVariablePriceToggle}
+                />
+              </View>
+
               <View style={{ flexDirection: "row", gap: 16, marginBottom: 24 }}>
                 <FormFieldProduct
                   title="Preço de Venda"
@@ -387,6 +415,7 @@ const EditarProdutoWeb = () => {
                   }}
                   placeholder="Preço de Venda"
                   monetario={true}
+                  disabled={isVariablePrice}
                 />
 
                 <FormFieldProduct

@@ -17,6 +17,7 @@ import { icons } from "@/constants";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "@/components/CustomHeader";
 import { router } from "expo-router";
+import { Modal as RNModal } from "react-native"; // Adicione este import
 
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([]);
@@ -25,6 +26,9 @@ const CategoryManagement = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [editingCategory, setEditingCategory] = useState({ id: "", name: "" });
+  const [confirmDeleteModalVisible, setConfirmDeleteModalVisible] =
+    useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
 
   const fetchCategories = async () => {
     try {
@@ -93,51 +97,27 @@ const CategoryManagement = () => {
     }
   };
 
-  const handleDeleteCategory = async (categoryId) => {
-    Alert.alert(
-      "Confirmar Exclusão",
-      "Tem certeza que deseja excluir esta categoria?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const user = auth.currentUser;
-              if (!user) throw new Error("Usuário não autenticado");
+  const handleDeleteCategory = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("Usuário não autenticado");
 
-              const categoryRef = doc(
-                db,
-                `users/${user.uid}/category`,
-                categoryId
-              );
-              await deleteDoc(categoryRef);
+      const categoryRef = doc(
+        db,
+        `users/${user.uid}/category`,
+        categoryToDelete.id
+      );
+      await deleteDoc(categoryRef);
 
-              setCategories((prev) =>
-                prev.filter((cat) => cat.id !== categoryId)
-              );
-              Alert.alert("Sucesso", "Categoria excluída com sucesso!");
-            } catch (error) {
-              Alert.alert(
-                "Erro",
-                "Erro ao excluir categoria: " + error.message
-              );
-            }
-          },
-        },
-      ]
-    );
+      setCategories((prev) =>
+        prev.filter((cat) => cat.id !== categoryToDelete.id)
+      );
+      setConfirmDeleteModalVisible(false);
+      Alert.alert("Sucesso", "Categoria excluída com sucesso!");
+    } catch (error) {
+      Alert.alert("Erro", "Erro ao excluir categoria: " + error.message);
+    }
   };
-
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" className="color-secundaria-700" />
-        <Text>Carregando categorias...</Text>
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">
@@ -175,7 +155,10 @@ const CategoryManagement = () => {
                 <Text className="text-white">Editar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => handleDeleteCategory(category.id)}
+                onPress={() => {
+                  setCategoryToDelete(category);
+                  setConfirmDeleteModalVisible(true);
+                }}
                 className="bg-terceira-600 p-2 rounded-lg"
               >
                 <Text className="text-white">Excluir</Text>
@@ -252,6 +235,39 @@ const CategoryManagement = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Modal para confirmar exclusão */}
+      <RNModal
+        visible={confirmDeleteModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setConfirmDeleteModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-gray-500 bg-opacity-50">
+          <View className="bg-white p-6 rounded-lg w-100">
+            <Text className="text-xl font-bold mb-4">Confirmar Exclusão</Text>
+            <Text className="mb-4">
+              Tem certeza que deseja excluir esta categoria?
+            </Text>
+            <View className="w-max h-10 flex-row gap-2 items-center align-middle justify-between">
+              <BotaoComIcone
+                text="Excluir"
+                icon={icons.deletar}
+                onPress={handleDeleteCategory}
+                extraBotaoClassName="h-12 bg-red-500"
+                extraTextClassName="text-white"
+                iconColor="white"
+              />
+              <BotaoComIcone
+                text="Cancelar"
+                icon={icons.cancel}
+                onPress={() => setConfirmDeleteModalVisible(false)}
+                extraBotaoClassName="h-12"
+              />
+            </View>
+          </View>
+        </View>
+      </RNModal>
     </SafeAreaView>
   );
 };

@@ -102,6 +102,9 @@ const WebNavBar = ({ isExpanded, onToggle }: WebNavBarProps) => {
         <NavLink to="/(tabs)/dashboard" icon="bar-chart-outline">
           Dashboard
         </NavLink>
+        <NavLink to="/screens/CategoryManagement" icon="pricetags-outline">
+          Categorias
+        </NavLink>
       </View>
 
       <View className="mt-auto border-t border-secundaria-200 p-4">
