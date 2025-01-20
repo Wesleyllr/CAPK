@@ -1,0 +1,32 @@
+users (coleção)
+  └── {userId} (documento)
+        ├── category (subcoleção)
+        │     └── {categoryId} (documento)
+        │           ├── name
+        │           └── createdAt
+        ├── products (subcoleção)
+        │     └── {productId} (documento)
+        │           ├── title
+        │           ├── description
+        │           ├── value
+        │           ├── custo
+        │           ├── category
+        │           ├── date
+        │           ├── imageUrl
+        │           ├── codeBar
+        │           ├── backgroundColor
+        │           └── isVariablePrice
+        ├── counter (subcoleção)
+        │     └── orderCounter (documento)
+        │           └── currentNumber
+orders (coleção)
+  └── {userId} (documento)
+        └── vendas (subcoleção)
+              └── {vendaId} (documento)
+                    ├── idOrder
+                    ├── userId
+                    ├── items
+                    ├── total
+                    ├── status
+                    ├── createdAt
+                    └── nomeCliente

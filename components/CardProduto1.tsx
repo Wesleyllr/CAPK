@@ -16,6 +16,7 @@ const CardProduto1 = ({
   title,
   onPress,
   quantity = 0,
+  isVariablePrice = false,
 }) => {
   const [localQuantity, setLocalQuantity] = useState(quantity);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -31,7 +32,7 @@ const CardProduto1 = ({
   }).format(price);
 
   const handlePress = () => {
-    if (price === null) {
+    if (isVariablePrice && price === null) {
       setIsModalVisible(true);
     } else {
       onPress({ title, price, imageSource, backgroundColor, quantity });

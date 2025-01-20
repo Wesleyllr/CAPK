@@ -233,6 +233,7 @@ const Vender = () => {
     const updateCartCount = async () => {
       const count = await CartService.getItemCount();
       setCartCount(count);
+      setLocalCartCount(count); // Ensure both states are updated together
     };
 
     // Atualiza quando a tela recebe foco
@@ -240,6 +241,7 @@ const Vender = () => {
 
     return () => unsubscribe();
   }, [navigation]);
+
   const fetchCategories = async () => {
     try {
       const userCategories = await getUserCategories();
@@ -316,36 +318,29 @@ const Vender = () => {
     setProcessingClicks((prev) => ({ ...prev, [product.id]: true }));
 
     try {
-      // Get current quantity from cart service first
+      const cartItem: ICartItem = {
+        id: product.id,
+        title: product.title,
+        value: product.value,
+        quantity: 1, // Sempre adiciona 1
+        imageUrl: product.imageUrl || undefined,
+        observations: "",
+      };
+
+      await CartService.addItem(cartItem);
+
+      // Atualiza a contagem local após a adição
+      const updatedCount = await CartService.getItemCount();
+      setLocalCartCount(updatedCount);
+
+      // Atualiza as quantidades selecionadas
       const currentItems = await CartService.getItems();
-      const existingItem = currentItems.find((item) => item.id === product.id);
-      const newQty = (existingItem?.quantity || 0) + 1;
-
-      if (product.isVariablePrice && !existingItem) {
-        // Show modal to set price if it's a variable price product and not already in the cart
-        setVariablePriceModalVisible(true);
-        setSelectedProduct(product);
-      } else {
-        const cartItem: ICartItem = {
-          id: product.id,
-          title: product.title,
-          value: product.value,
-          quantity: newQty,
-          imageUrl: product.imageUrl || undefined,
-          observations: "",
-        };
-
-        await CartService.addItem(cartItem);
-
-        // After successful cart update, update local states
+      const updatedItem = currentItems.find((item) => item.id === product.id);
+      if (updatedItem) {
         setSelectedQuantities((prev) => ({
           ...prev,
-          [product.id]: newQty,
+          [product.id]: updatedItem.quantity,
         }));
-
-        // Update local cart count based on actual cart items
-        const updatedCount = await CartService.getItemCount();
-        setLocalCartCount(updatedCount);
       }
     } catch (error) {
       alertaPersonalizado({
@@ -410,7 +405,8 @@ const Vender = () => {
   useEffect(() => {
     const syncCartCount = async () => {
       const count = await CartService.getItemCount();
-      setLocalCartCount(count);
+      setCartCount(count);
+      setLocalCartCount(count); // Ensure both states are updated together
       setForceUpdate((prev) => !prev); // Força a re-renderização
     };
 
@@ -458,7 +454,9 @@ const Vender = () => {
         type: "success",
       });
 
-      router.back();
+      if (Platform.OS !== "web") {
+        router.back();
+      }
     } catch (error) {
       alertaPersonalizado({
         message: "Erro",
