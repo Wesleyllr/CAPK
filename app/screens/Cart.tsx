@@ -112,8 +112,14 @@ export default function Cart() {
 
   const handleOrder = async (status: "completed" | "pending") => {
     try {
+      // Make sure items include category information when creating order
+      const itemsWithCategory = items.map((item) => ({
+        ...item,
+        categoryId: item.category || "sem categoria", // Provide default if category is missing
+      }));
+
       const { orderRefId, idOrder } = await OrderService.createOrder(
-        items,
+        itemsWithCategory,
         total,
         status,
         nomeCliente

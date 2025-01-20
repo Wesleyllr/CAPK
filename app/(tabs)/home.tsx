@@ -309,13 +309,6 @@ const Home = () => {
               onPress={() => router.push("/screens/pedidos")}
               badgeCount={pendingOrders.length} // Usando o length dos pedidos pendentes
             />
-            <QuickAction
-              icon={
-                <Ionicons name="archive-outline" size={20} color="#7f5d5a" />
-              }
-              title="Histórico"
-              onPress={() => router.push("/dashboard")}
-            />
           </View>
         </View>
         <View className="mb-6">

@@ -22,6 +22,7 @@ export interface IOrder {
   status: OrderStatus;
   createdAt: Date;
   nomeCliente: string;
+  categoryId?: string;
 }
 
 export interface SalesMetric {

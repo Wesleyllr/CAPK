@@ -322,9 +322,10 @@ const Vender = () => {
         id: product.id,
         title: product.title,
         value: product.value,
-        quantity: 1, // Sempre adiciona 1
+        quantity: 1,
         imageUrl: product.imageUrl || undefined,
         observations: "",
+        categoryId: product.category || "sem categoria",
       };
 
       await CartService.addItem(cartItem);
@@ -433,8 +434,14 @@ const Vender = () => {
         (sum, item) => sum + item.value * item.quantity,
         0
       );
+
+      const itemsWithCategory = items.map((item) => ({
+        ...item,
+        categoryId: item.category || "sem categoria",
+      }));
+
       const { orderRefId, idOrder } = await OrderService.createOrder(
-        items,
+        itemsWithCategory,
         total,
         status,
         nomeCliente
