@@ -329,7 +329,7 @@ const Vender = () => {
           quantity: 1,
           imageUrl: product.imageUrl || undefined,
           observations: "",
-          categoryId: product.category || "sem categoria",
+          categoryId: product.categoryId || product.category || "sem categoria",
         };
 
         await CartService.addItem(cartItem);
@@ -370,6 +370,8 @@ const Vender = () => {
         quantity: 1,
         imageUrl: selectedProduct.imageUrl || undefined,
         observations: "",
+        categoryId: selectedProduct.categoryId || selectedProduct.category || "sem categoria",
+
       };
 
       try {
@@ -442,7 +444,7 @@ const Vender = () => {
 
       const itemsWithCategory = items.map((item) => ({
         ...item,
-        categoryId: item.category || "sem categoria",
+        categoryId: item.categoryId || "sem categoria",
       }));
 
       const { orderRefId, idOrder } = await OrderService.createOrder(

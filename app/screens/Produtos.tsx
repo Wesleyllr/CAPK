@@ -187,7 +187,7 @@ const Produtos = () => {
   const handleEditProduct = (product) => {
     const isWeb = Platform.OS === "web";
 
-    const path = isWeb ? "/screens/EditarProdutoWeb" : "/screens/EditarProduto";
+    const path = "/screens/EditarProduto"
 
     router.push({
       pathname: path,

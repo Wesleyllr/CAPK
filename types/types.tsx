@@ -8,6 +8,7 @@ export interface IProduct {
 }
 
 export interface ICartItem extends IProduct {
+  categoryId: string;
   observations?: string;
 }
 

@@ -81,6 +81,18 @@ const renderActiveShape = (props) => {
       >
         {`(${(percent * 100).toFixed(2)}%)`}
       </text>
+      <text
+        x={ex + (cos >= 0 ? 1 : -1) * 12}
+        y={ey}
+        dy={36}
+        textAnchor={textAnchor}
+        fill="#666"
+      >
+        {`Total: ${payload.valorTotal.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        })}`}
+      </text>
     </g>
   );
 };
@@ -92,10 +104,6 @@ const CategoriesChart = ({ categoriasMaisVendidas }) => {
     setActiveIndex(index);
   };
 
-  // Add debug logging
-  console.log("CategoriesChart received data:", categoriasMaisVendidas);
-
-  // Check for null or undefined
   if (!categoriasMaisVendidas) {
     return (
       <Card>
@@ -109,7 +117,6 @@ const CategoriesChart = ({ categoriasMaisVendidas }) => {
     );
   }
 
-  // Check for empty array
   if (categoriasMaisVendidas.length === 0) {
     return (
       <Card>
@@ -123,7 +130,6 @@ const CategoriesChart = ({ categoriasMaisVendidas }) => {
     );
   }
 
-  // If we have data, render the chart
   return (
     <Card>
       <CardHeader>

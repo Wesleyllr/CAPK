@@ -59,12 +59,16 @@ export const getUserProducts = async () => {
       return [];
     }
 
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      value: parseFloat(doc.data().value || "0"),
-      custo: parseFloat(doc.data().custo || "0"),
-    }));
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        value: parseFloat(data.value || "0"),
+        custo: parseFloat(data.custo || "0"),
+        categoryId: data.category, // Ensure categoryId is set correctly
+      };
+    });
   } catch (error) {
     throw new Error("Erro ao buscar produtos: " + error.message);
   }

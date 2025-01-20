@@ -149,68 +149,74 @@ const Dashboard = () => {
           return;
         }
 
-        // 1. Primeiro, buscar todas as categorias do usuário
+        // 1. First, fetch all categories
         const categoriesRef = collection(db, `users/${userId}/category`);
         const categoriesSnapshot = await getDocs(categoriesRef);
         const categoriesMap = {};
         categoriesSnapshot.docs.forEach((doc) => {
           categoriesMap[doc.id] = doc.data().name;
         });
-        console.log("Categorias buscadas:", categoriesMap);
 
-        // 2. Buscar vendas
+        // 2. Fetch products to get their categories and values
+        const productsRef = collection(db, `users/${userId}/products`);
+        const productsSnapshot = await getDocs(productsRef);
+        const productsMap = {};
+        productsSnapshot.docs.forEach((doc) => {
+          const data = doc.data();
+          productsMap[doc.id] = {
+            categoryId: data.category,
+            value: parseFloat(data.value || 0),
+          };
+        });
+
+        // 3. Fetch sales
         const vendasRef = collection(db, `orders/${userId}/vendas`);
         const vendasSnapshot = await getDocs(vendasRef);
         const vendas = vendasSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        console.log("Vendas buscadas:", vendas);
 
-        // Cálculos básicos
-        const faturamentoTotal = vendas.reduce(
-          (acc, venda) => acc + venda.total,
-          0
-        );
+        // Calculate basic stats
+        const faturamentoTotal = vendas.reduce((acc, venda) => acc + venda.total, 0);
         const pedidosPendentes = vendas.filter(
           (venda) => venda.status === "pending"
         ).length;
 
-        // 3. Processar produtos e categorias
-        const produtosContagem = {};
-        const categoriasContagem = {};
+        // Initialize produtosMaisVendidos
+        const produtosMaisVendidos = [];
 
-        // Processar todas as vendas de uma vez
+        // Process products and categories with total values
+        const categoriasContagem = {};
+        const categoriasTotais = {};
+
+        // Process all sales at once
         vendas.forEach((venda) => {
           venda.items.forEach((item) => {
-            // Contagem de produtos
-            produtosContagem[item.title] =
-              (produtosContagem[item.title] || 0) + item.quantity;
-
-            console.log("Category ID:", item.categoryId);
             const categoryId = item.categoryId || item.category;
-
-            // Contagem de categorias - usando o map previamente carregado
+            
             if (categoryId && categoriesMap[categoryId]) {
               const categoryName = categoriesMap[categoryId];
-              console.log("Found category name:", categoryName);
-              categoriasContagem[categoryName] =
+              
+              // Count quantities
+              categoriasContagem[categoryName] = 
                 (categoriasContagem[categoryName] || 0) + item.quantity;
-            } else {
-              console.log("Category not found for item:", item);
+              
+              // Sum total values
+              const itemTotal = item.value * item.quantity;
+              categoriasTotais[categoryName] = 
+                (categoriasTotais[categoryName] || 0) + itemTotal;
             }
           });
         });
-        console.log("Final categorias contagem:", categoriasContagem);
 
-        // Converter para arrays e ordenar
-        const produtosMaisVendidos = Object.entries(produtosContagem)
-          .map(([title, quantidade]) => ({ title, quantidade }))
-          .sort((a, b) => b.quantidade - a.quantidade)
-          .slice(0, 5);
-
+        // Convert to arrays and sort by quantity
         const categoriasMaisVendidas = Object.entries(categoriasContagem)
-          .map(([name, quantidade]) => ({ name, quantidade }))
+          .map(([name, quantidade]) => ({
+            name,
+            quantidade,
+            valorTotal: categoriasTotais[name] || 0,
+          }))
           .sort((a, b) => b.quantidade - a.quantidade)
           .slice(0, 5);
 

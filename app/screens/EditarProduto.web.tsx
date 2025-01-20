@@ -12,7 +12,7 @@ import { uploadProductImage } from "@/scripts/uploadImage";
 import ColorSelector from "@/components/ColorSelector";
 import eventBus from "@/utils/eventBus";
 
-const EditarProdutoWeb = () => {
+const EditarProduto = () => {
   const router = useRouter();
   const { productId } = useLocalSearchParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -492,4 +492,4 @@ const EditarProdutoWeb = () => {
   );
 };
 
-export default EditarProdutoWeb;
+export default EditarProduto;

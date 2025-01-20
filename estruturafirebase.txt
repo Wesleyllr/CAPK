@@ -1,11 +1,11 @@
-users (coleção)
-  └── {userId} (documento)
-        ├── category (subcoleção)
-        │     └── {categoryId} (documento)
+users
+  └── {userId}
+        ├── category
+        │     └── {categoryId}
         │           ├── name
         │           └── createdAt
-        ├── products (subcoleção)
-        │     └── {productId} (documento)
+        ├── products
+        │     └── {productId}
         │           ├── title
         │           ├── description
         │           ├── value
@@ -16,16 +16,25 @@ users (coleção)
         │           ├── codeBar
         │           ├── backgroundColor
         │           └── isVariablePrice
-        ├── counter (subcoleção)
-        │     └── orderCounter (documento)
+        ├── counter
+        │     └── orderCounter
         │           └── currentNumber
-orders (coleção)
-  └── {userId} (documento)
-        └── vendas (subcoleção)
-              └── {vendaId} (documento)
+orders
+  └── {userId}
+        └── vendas
+              └── {vendaId}
                     ├── idOrder
                     ├── userId
                     ├── items
+                    │     (array)
+                    │     0
+                    │       (map)
+                    │       ├── categoryId
+                    │       ├── id
+                    │       ├── observations
+                    │       ├── quantity
+                    │       ├── title
+                    │       └── value
                     ├── total
                     ├── status
                     ├── createdAt
