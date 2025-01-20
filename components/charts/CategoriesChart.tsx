@@ -71,7 +71,7 @@ const renderActiveShape = (props) => {
         y={ey}
         textAnchor={textAnchor}
         fill="#333"
-      >{`Qtd: ${value}`}</text>
+      >{`Quantidade: ${payload.quantidade}`}</text>
       <text
         x={ex + (cos >= 0 ? 1 : -1) * 12}
         y={ey}
@@ -148,7 +148,7 @@ const CategoriesChart = ({ categoriasMaisVendidas }) => {
                 innerRadius={60}
                 outerRadius={80}
                 fill="#8884d8"
-                dataKey="quantidade"
+                dataKey="valorTotal" // Change dataKey to valorTotal
                 onMouseEnter={onPieEnter}
               >
                 {categoriasMaisVendidas.map((entry, index) => (

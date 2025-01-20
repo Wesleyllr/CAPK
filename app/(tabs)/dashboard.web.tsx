@@ -121,7 +121,7 @@ const Dashboard = () => {
     totalVendas: 0,
     faturamentoTotal: 0,
     pedidosPendentes: 0,
-    produtosMaisVendidos: [],
+    produtosMaisVendidos: [], // Initialize produtosMaisVendidos
     categoriasMaisVendidas: [],
     vendasPorMes: [],
   });
@@ -129,6 +129,7 @@ const Dashboard = () => {
   const [overallSalesData, setOverallSalesData] = useState([]);
 
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const handleMonthChange = (month: string) => {
     setSelectedMonths((prev) =>
@@ -136,8 +137,24 @@ const Dashboard = () => {
     );
   };
 
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
+
   const filteredSalesData = salesData.vendasPorMes.filter((data) =>
     selectedMonths.length ? selectedMonths.includes(data.mes) : true
+  );
+
+  const filteredOverallSalesData = overallSalesData.filter((data) =>
+    selectedCategories.length
+      ? data.items.some((item) =>
+          selectedCategories.includes(item.categoryId)
+        )
+      : true
   );
 
   useEffect(() => {
@@ -164,6 +181,7 @@ const Dashboard = () => {
         productsSnapshot.docs.forEach((doc) => {
           const data = doc.data();
           productsMap[doc.id] = {
+            title: data.title,
             categoryId: data.category,
             value: parseFloat(data.value || 0),
           };
@@ -177,31 +195,43 @@ const Dashboard = () => {
           ...doc.data(),
         }));
 
+        // Filter completed sales
+        const completedVendas = vendas.filter(venda => venda.status === "completed");
+
         // Calculate basic stats
-        const faturamentoTotal = vendas.reduce((acc, venda) => acc + venda.total, 0);
+        const faturamentoTotal = completedVendas.reduce((acc, venda) => acc + venda.total, 0);
         const pedidosPendentes = vendas.filter(
           (venda) => venda.status === "pending"
         ).length;
 
         // Initialize produtosMaisVendidos
-        const produtosMaisVendidos = [];
+        const produtosContagem = {};
 
         // Process products and categories with total values
         const categoriasContagem = {};
         const categoriasTotais = {};
 
-        // Process all sales at once
-        vendas.forEach((venda) => {
+        // Process all completed sales at once
+        completedVendas.forEach((venda) => {
           venda.items.forEach((item) => {
+            const productId = item.id;
             const categoryId = item.categoryId || item.category;
-            
+
+            if (productId && productsMap[productId]) {
+              const productTitle = productsMap[productId].title;
+
+              // Count product quantities
+              produtosContagem[productTitle] = 
+                (produtosContagem[productTitle] || 0) + item.quantity;
+            }
+
             if (categoryId && categoriesMap[categoryId]) {
               const categoryName = categoriesMap[categoryId];
-              
-              // Count quantities
+
+              // Count category quantities
               categoriasContagem[categoryName] = 
                 (categoriasContagem[categoryName] || 0) + item.quantity;
-              
+
               // Sum total values
               const itemTotal = item.value * item.quantity;
               categoriasTotais[categoryName] = 
@@ -211,6 +241,14 @@ const Dashboard = () => {
         });
 
         // Convert to arrays and sort by quantity
+        const produtosMaisVendidos = Object.entries(produtosContagem)
+          .map(([title, quantidade]) => ({
+            title,
+            quantidade,
+          }))
+          .sort((a, b) => b.quantidade - a.quantidade)
+          .slice(0, 5);
+
         const categoriasMaisVendidas = Object.entries(categoriasContagem)
           .map(([name, quantidade]) => ({
             name,
@@ -221,7 +259,7 @@ const Dashboard = () => {
           .slice(0, 5);
 
         // Group sales by month
-        const vendasPorMes = vendas.reduce((acc, venda) => {
+        const vendasPorMes = completedVendas.reduce((acc, venda) => {
           const data = venda.createdAt.toDate();
           const mes = data.toLocaleString("pt-BR", { month: "short" });
           const existingMonth = acc.find((item) => item.mes === mes);
@@ -235,15 +273,16 @@ const Dashboard = () => {
         }, []);
 
         // Group overall sales
-        const overallSales = vendas.reduce((acc, venda) => {
+        const overallSales = completedVendas.reduce((acc, venda) => {
           const data = venda.createdAt.toDate();
           const date = data.toLocaleDateString("pt-BR");
           const existingDate = acc.find((item) => item.date === date);
 
           if (existingDate) {
             existingDate.total += venda.total;
+            existingDate.items.push(...venda.items);
           } else {
-            acc.push({ date, total: venda.total });
+            acc.push({ date, total: venda.total, items: venda.items });
           }
           return acc;
         }, []);
@@ -252,10 +291,10 @@ const Dashboard = () => {
         overallSales.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         setSalesData({
-          totalVendas: vendas.length,
+          totalVendas: completedVendas.length,
           faturamentoTotal,
           pedidosPendentes,
-          produtosMaisVendidos,
+          produtosMaisVendidos, // Set produtosMaisVendidos
           categoriasMaisVendidas,
           vendasPorMes,
         });
@@ -313,7 +352,6 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center space-x-4">
@@ -350,6 +388,21 @@ const Dashboard = () => {
               </View>
             ))}
           </View>
+          <View className="flex flex-row mb-4 mx-4">
+            {salesData.categoriasMaisVendidas.map((data) => (
+              <View key={data.name} className="mr-4 mb-2">
+                <Checkbox
+                  status={
+                    selectedCategories.includes(data.name)
+                      ? "checked"
+                      : "unchecked"
+                  }
+                  onPress={() => handleCategoryChange(data.name)}
+                />
+                <Text>{data.name}</Text>
+              </View>
+            ))}
+          </View>
           <View className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredSalesData}>
@@ -370,9 +423,24 @@ const Dashboard = () => {
           <CardTitle>Vendas Gerais</CardTitle>
         </CardHeader>
         <CardContent>
+          <View className="flex flex-row mb-4 mx-4">
+            {salesData.categoriasMaisVendidas.map((data) => (
+              <View key={data.name} className="mr-4 mb-2">
+                <Checkbox
+                  status={
+                    selectedCategories.includes(data.name)
+                      ? "checked"
+                      : "unchecked"
+                  }
+                  onPress={() => handleCategoryChange(data.name)}
+                />
+                <Text>{data.name}</Text>
+              </View>
+            ))}
+          </View>
           <View className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={overallSalesData}>
+              <AreaChart data={filteredOverallSalesData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />

@@ -293,8 +293,6 @@ const Produtos = () => {
       <Header
         title="Meus Produtos"
         onGoBack={() => router.back()}
-        isCompactView={viewMode === "list"}
-        onToggleView={toggleViewMode}
       />
 
       <View className="w-full h-12 mt-2">
