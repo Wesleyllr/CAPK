@@ -14,14 +14,20 @@ import * as RadixSlider from "@radix-ui/react-slider";
 interface SalesByMonthChartProps {
   salesData: any;
   selectedMonths: string[];
+  selectedYear: number;
+  availableYears: number[];
   handleMonthChange: (values: number[]) => void;
+  handleYearChange: (year: number) => void;
   filteredSalesData: any[];
 }
 
 const SalesByMonthChart: React.FC<SalesByMonthChartProps> = ({
   salesData,
   selectedMonths,
+  selectedYear,
+  availableYears,
   handleMonthChange,
+  handleYearChange,
   filteredSalesData,
 }) => {
   const [sliderValue, setSliderValue] = useState([0, 11]);
@@ -56,6 +62,18 @@ const SalesByMonthChart: React.FC<SalesByMonthChartProps> = ({
   return (
     <div className="w-full space-y-4">
       <div className="px-4">
+        <select
+          value={selectedYear}
+          onChange={(e) => handleYearChange(Number(e.target.value))}
+          className="mb-4 p-2 border rounded"
+        >
+          {availableYears.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
         <RadixSlider.Root
           value={sliderValue}
           onValueChange={handleSliderChange}

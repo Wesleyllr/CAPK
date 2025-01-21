@@ -133,6 +133,8 @@ const Dashboard = () => {
 
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number>(2023);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   const handleMonthChange = (selected: string[]) => {
     console.log("Selected months in Dashboard:", selected);
@@ -145,6 +147,11 @@ const Dashboard = () => {
         ? prev.filter((c) => c !== category)
         : [...prev, category]
     );
+  };
+
+  const handleYearChange = (year: number) => {
+    console.log("Selected year in Dashboard:", year);
+    setSelectedYear(year);
   };
 
   const monthLabels = [
@@ -165,7 +172,8 @@ const Dashboard = () => {
   const filteredSalesData = salesData.vendasPorMes
     .filter((data) => {
       const result =
-        selectedMonths.length === 0 || selectedMonths.includes(data.mes);
+        (selectedMonths.length === 0 || selectedMonths.includes(data.mes)) &&
+        data.ano === selectedYear;
       console.log("Filtering data:", data, "Result:", result);
       return result;
     })
@@ -287,15 +295,22 @@ const Dashboard = () => {
         const vendasPorMes = completedVendas.reduce((acc, venda) => {
           const data = venda.createdAt.toDate();
           const mes = data.toLocaleString("pt-BR", { month: "short" });
-          const existingMonth = acc.find((item) => item.mes === mes);
+          const ano = data.getFullYear();
+          const existingMonth = acc.find(
+            (item) => item.mes === mes && item.ano === ano
+          );
 
           if (existingMonth) {
             existingMonth.total += venda.total;
           } else {
-            acc.push({ mes, total: venda.total });
+            acc.push({ mes, ano, total: venda.total });
           }
           return acc;
         }, []);
+
+        // Extract unique years from vendasPorMes
+        const uniqueYears = [...new Set(vendasPorMes.map((item) => item.ano))];
+        setAvailableYears(uniqueYears);
 
         // Group overall sales
         const overallSales = completedVendas.reduce((acc, venda) => {
@@ -386,7 +401,10 @@ const Dashboard = () => {
           <SalesByMonthChart
             salesData={salesData}
             selectedMonths={selectedMonths}
+            selectedYear={selectedYear}
+            availableYears={availableYears}
             handleMonthChange={handleMonthChange}
+            handleYearChange={handleYearChange}
             filteredSalesData={filteredSalesData}
           />
         </CardContent>
