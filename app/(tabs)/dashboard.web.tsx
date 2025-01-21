@@ -36,10 +36,13 @@ import {
   AlertCircle,
   BarChart,
 } from "lucide-react";
-import CategoriesChart from "@/components/charts/CategoriesChart";
+import CategoriesChart from "@/components/dashboard/CategoriesChart";
 
-import { ScrollView, View, Text } from "react-native"; // Import Text from react-native
+import { ScrollView, View, Text, TouchableOpacity } from "react-native"; // Import Text from react-native
 import { Checkbox } from "react-native-paper"; // Import Checkbox from react-native-paper
+import BestSellingProducts from "@/components/dashboard/BestSellingProducts"; // Import the new component
+import CardDash from "@/components/dashboard/CardDash"; // Import the new component
+import SalesByMonthChart from "@/components/dashboard/SalesByMonthChart"; // Import the new component
 
 const renderActiveShape = (props) => {
   const RADIAN = Math.PI / 180;
@@ -131,10 +134,23 @@ const Dashboard = () => {
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const handleMonthChange = (month: string) => {
-    setSelectedMonths((prev) =>
-      prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]
-    );
+  const handleMonthChange = (values: number[]) => {
+    const monthLabels = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const selected = values.map((value) => monthLabels[value]);
+    setSelectedMonths(selected);
   };
 
   const handleCategoryChange = (category: string) => {
@@ -151,9 +167,7 @@ const Dashboard = () => {
 
   const filteredOverallSalesData = overallSalesData.filter((data) =>
     selectedCategories.length
-      ? data.items.some((item) =>
-          selectedCategories.includes(item.categoryId)
-        )
+      ? data.items.some((item) => selectedCategories.includes(item.categoryId))
       : true
   );
 
@@ -196,10 +210,15 @@ const Dashboard = () => {
         }));
 
         // Filter completed sales
-        const completedVendas = vendas.filter(venda => venda.status === "completed");
+        const completedVendas = vendas.filter(
+          (venda) => venda.status === "completed"
+        );
 
         // Calculate basic stats
-        const faturamentoTotal = completedVendas.reduce((acc, venda) => acc + venda.total, 0);
+        const faturamentoTotal = completedVendas.reduce(
+          (acc, venda) => acc + venda.total,
+          0
+        );
         const pedidosPendentes = vendas.filter(
           (venda) => venda.status === "pending"
         ).length;
@@ -221,7 +240,7 @@ const Dashboard = () => {
               const productTitle = productsMap[productId].title;
 
               // Count product quantities
-              produtosContagem[productTitle] = 
+              produtosContagem[productTitle] =
                 (produtosContagem[productTitle] || 0) + item.quantity;
             }
 
@@ -229,12 +248,12 @@ const Dashboard = () => {
               const categoryName = categoriesMap[categoryId];
 
               // Count category quantities
-              categoriasContagem[categoryName] = 
+              categoriasContagem[categoryName] =
                 (categoriasContagem[categoryName] || 0) + item.quantity;
 
               // Sum total values
               const itemTotal = item.value * item.quantity;
-              categoriasTotais[categoryName] = 
+              categoriasTotais[categoryName] =
                 (categoriasTotais[categoryName] || 0) + itemTotal;
             }
           });
@@ -319,55 +338,26 @@ const Dashboard = () => {
       <Text className="text-2xl font-bold mb-6">Dashboard</Text>
 
       {/* Cards principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-4">
-              <ShoppingCart className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Total de Vendas
-                </p>
-                <h3 className="text-2xl font-bold">{salesData.totalVendas}</h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-4">
-              <DollarSign className="h-8 w-8 text-green-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Faturamento Total
-                </p>
-                <h3 className="text-2xl font-bold">
-                  {salesData.faturamentoTotal.toLocaleString("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  })}
-                </h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-4">
-              <AlertCircle className="h-8 w-8 text-yellow-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Pedidos Pendentes
-                </p>
-                <h3 className="text-2xl font-bold">
-                  {salesData.pedidosPendentes}
-                </h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <View className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CardDash
+          icon={<ShoppingCart className="h-8 w-8 text-blue-500" />}
+          title="Total de Vendas"
+          value={salesData.totalVendas}
+        />
+        <CardDash
+          icon={<DollarSign className="h-8 w-8 text-green-500" />}
+          title="Faturamento Total"
+          value={salesData.faturamentoTotal.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}
+        />
+        <CardDash
+          icon={<AlertCircle className="h-8 w-8 text-yellow-500" />}
+          title="Pedidos Pendentes"
+          value={salesData.pedidosPendentes}
+        />
+      </View>
 
       {/* Gráfico de vendas */}
       <Card className="mt-6">
@@ -375,45 +365,12 @@ const Dashboard = () => {
           <CardTitle>Vendas por Mês</CardTitle>
         </CardHeader>
         <CardContent>
-          <View className="flex flex-row mb-4 mx-4">
-            {salesData.vendasPorMes.map((data) => (
-              <View key={data.mes} className="mr-4 mb-2">
-                <Checkbox
-                  status={
-                    selectedMonths.includes(data.mes) ? "checked" : "unchecked"
-                  }
-                  onPress={() => handleMonthChange(data.mes)}
-                />
-                <Text>{data.mes}</Text>
-              </View>
-            ))}
-          </View>
-          <View className="flex flex-row mb-4 mx-4">
-            {salesData.categoriasMaisVendidas.map((data) => (
-              <View key={data.name} className="mr-4 mb-2">
-                <Checkbox
-                  status={
-                    selectedCategories.includes(data.name)
-                      ? "checked"
-                      : "unchecked"
-                  }
-                  onPress={() => handleCategoryChange(data.name)}
-                />
-                <Text>{data.name}</Text>
-              </View>
-            ))}
-          </View>
-          <View className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={filteredSalesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="mes" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="total" stroke="#2563eb" />
-              </LineChart>
-            </ResponsiveContainer>
-          </View>
+          <SalesByMonthChart
+            salesData={salesData}
+            selectedMonths={selectedMonths}
+            handleMonthChange={handleMonthChange}
+            filteredSalesData={filteredSalesData}
+          />
         </CardContent>
       </Card>
 
@@ -425,17 +382,17 @@ const Dashboard = () => {
         <CardContent>
           <View className="flex flex-row mb-4 mx-4">
             {salesData.categoriasMaisVendidas.map((data) => (
-              <View key={data.name} className="mr-4 mb-2">
-                <Checkbox
-                  status={
-                    selectedCategories.includes(data.name)
-                      ? "checked"
-                      : "unchecked"
-                  }
-                  onPress={() => handleCategoryChange(data.name)}
-                />
+              <TouchableOpacity
+                key={data.name}
+                className={`mr-4 mb-2 px-4 py-2 rounded-full ${
+                  selectedCategories.includes(data.name)
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-black"
+                }`}
+                onPress={() => handleCategoryChange(data.name)}
+              >
                 <Text>{data.name}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
           <View className="h-[300px]">
@@ -459,24 +416,9 @@ const Dashboard = () => {
 
       {/* Lists */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Produtos Mais Vendidos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {salesData.produtosMaisVendidos.map((produto, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="font-medium">{produto.title}</span>
-                  <span className="text-gray-600">
-                    {produto.quantidade} unidades
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
+        <BestSellingProducts
+          produtosMaisVendidos={salesData.produtosMaisVendidos}
+        />
         <CategoriesChart
           categoriasMaisVendidas={salesData.categoriasMaisVendidas}
         />
