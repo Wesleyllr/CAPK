@@ -192,7 +192,7 @@ const Criar = () => {
           otherStyles="px-4"
         />
 
-        <View className="w-full h-36 mt-2 justify-center items-center flex-row px-4 gap-2">
+        <View className="w-full h-36 mt-2 justify-center items-center flex-row px-4 gap-2 my-6">
           <View className="w-36 h-36 rounded-xl bg-secundaria-300 justify-center items-center">
             {selectedImage ? (
               <TouchableOpacity

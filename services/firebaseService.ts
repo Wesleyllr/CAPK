@@ -37,7 +37,6 @@ export const fetchSales = async (userId: string) => {
   console.log("Sales snapshot:", vendasSnapshot.docs.map(doc => doc.data()));
   return vendasSnapshot.docs.map((doc) => {
     const data = doc.data();
-    console.log("Sale data:", data);
     return {
       id: doc.id,
       ...data,

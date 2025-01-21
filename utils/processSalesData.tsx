@@ -1,4 +1,3 @@
-// src/utils/processSalesData.ts
 import { Sale, Product, Category, DashboardData } from "@/types/types";
 
 // Helper function to convert object to array if needed
@@ -36,6 +35,12 @@ export const createCategoriesMap = (
     }
     return acc;
   }, {} as Record<string, Category>);
+};
+
+const compareByYearDesc = (a, b) => {
+  return (
+    b.createdAt.toDate().getFullYear() - a.createdAt.toDate().getFullYear()
+  );
 };
 
 interface ProcessedData {
@@ -147,10 +152,8 @@ export const processSalesData = (
     return acc;
   }, [] as Sale[]);
 
-  // Ordena vendas por data
-  overallSales.sort(
-    (a, b) => a.createdAt.toDate().getTime() - b.createdAt.toDate().getTime()
-  );
+  // Ordena vendas por data, do mais recente para o mais antigo
+  overallSales.sort(compareByYearDesc);
 
   return {
     dashboardData: {

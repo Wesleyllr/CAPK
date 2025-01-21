@@ -56,14 +56,14 @@ const WebNavBar = ({ isExpanded, onToggle }: WebNavBarProps) => {
       <View className="p-4 border-b border-secundaria-200 flex-row items-center justify-between">
         {isExpanded ? (
           <Image
-            source={images.logo}
-            className="w-full h-12"
+            source={images.logopapelaria}
+            className="w-full h-20"
             contentFit="contain"
           />
         ) : (
           <View className="w-full items-center">
             <Image
-              source={images.logoSmall}
+              source={images.logopapelariasemtexto}
               className="w-12 h-12"
               contentFit="contain"
             />
@@ -99,7 +99,7 @@ const WebNavBar = ({ isExpanded, onToggle }: WebNavBarProps) => {
         <NavLink to="/screens/CriarWeb" icon="add-circle-outline">
           Criar Produto
         </NavLink>
-        <NavLink to="/(tabs)/dashboard" icon="bar-chart-outline">
+        <NavLink to="/screens/dashboard" icon="bar-chart-outline">
           Dashboard
         </NavLink>
         <NavLink to="/screens/CategoryManagement" icon="pricetags-outline">

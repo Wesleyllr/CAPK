@@ -271,7 +271,7 @@ const Home = () => {
             <Ionicons name="notifications-outline" size={20} color="#7f5d5a" />
           </TouchableOpacity>
         </View>
-        <View className="flex-row mb-6 justify-between">
+        <View className="flex-row mb-6 justify-start">
           <StatCard title="Hoje" value={salesData.daily} />
           <StatCard title="Semana" value={salesData.weekly} />
           <StatCard title="Mês" value={salesData.monthly} />
