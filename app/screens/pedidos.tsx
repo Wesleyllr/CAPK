@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
@@ -18,12 +19,15 @@ import OrderDetailsModal from "@/components/OrderDetailsModal";
 import eventBus from "@/utils/eventBus";
 import { onValue, ref } from "firebase/database";
 import { NotificationService } from "@/services/notificationService";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 export default function Pedidos() {
   const [showPending, setShowPending] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isConfirmationModalVisible, setIsConfirmationModalVisible] = useState(false);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ orderId: string; status: OrderStatus } | null>(null);
 
   const { orders, loading, refreshing, setRefreshing, fetchOrders } = useOrders(
     showPending,
@@ -32,65 +36,75 @@ export default function Pedidos() {
     "desc"
   );
 
-  const updateOrderStatus = useCallback(
+  const handleUpdateStatus = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
-      const handleUpdateStatus = async () => {
-        setIsUpdating(true);
-        try {
-          const user = auth.currentUser;
-          if (!user) {
-            throw new Error("Usuário não autenticado");
-          }
-
-          // Construir a referência correta do documento
-          const orderRef = doc(db, "orders", user.uid, "vendas", orderId);
-
-          // Verificar se o documento existe antes de tentar atualizar
-          const orderDoc = await getDoc(orderRef);
-          if (!orderDoc.exists()) {
-            throw new Error("Pedido não encontrado");
-          }
-
-          // Tentar atualizar o documento
-          await updateDoc(orderRef, {
-            status: newStatus,
-            updatedAt: new Date(),
-          });
-
-          // Atualizar a lista de pedidos
-          await fetchOrders();
-          eventBus.emit("pedidoAtualizado");
-        } catch (error) {
-          console.error("Erro na atualização:", error);
-          Alert.alert(
-            "Erro ao atualizar status",
-            "Não foi possível atualizar o status do pedido. Por favor, tente novamente."
-          );
-        } finally {
-          setIsUpdating(false);
+      setIsUpdating(true);
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error("Usuário não autenticado");
         }
-      };
 
-      if (newStatus === "canceled") {
+        // Construir a referência correta do documento
+        const orderRef = doc(db, "orders", user.uid, "vendas", orderId);
+
+        // Verificar se o documento existe antes de tentar atualizar
+        const orderDoc = await getDoc(orderRef);
+        if (!orderDoc.exists()) {
+          throw new Error("Pedido não encontrado");
+        }
+
+        // Tentar atualizar o documento
+        await updateDoc(orderRef, {
+          status: newStatus,
+          updatedAt: new Date(),
+        });
+
+        // Atualizar a lista de pedidos
+        await fetchOrders();
+        eventBus.emit("pedidoAtualizado");
+      } catch (error) {
+        console.error("Erro na atualização:", error);
         Alert.alert(
-          "Confirmar Cancelamento",
-          "Tem certeza que deseja cancelar este pedido?",
-          [
-            {
-              text: "Não",
-              style: "cancel",
-            },
-            {
-              text: "Sim",
-              onPress: handleUpdateStatus,
-            },
-          ]
+          "Erro ao atualizar status",
+          "Não foi possível atualizar o status do pedido. Por favor, tente novamente."
         );
-      } else {
-        handleUpdateStatus();
+      } finally {
+        setIsUpdating(false);
+        setIsConfirmationModalVisible(false);
+        setPendingStatusUpdate(null);
       }
     },
     [fetchOrders]
+  );
+
+  const updateOrderStatus = useCallback(
+    (orderId: string, newStatus: OrderStatus) => {
+      if (newStatus === "canceled") {
+        if (Platform.OS === 'web') {
+          setPendingStatusUpdate({ orderId, status: newStatus });
+          setIsConfirmationModalVisible(true);
+        } else {
+          Alert.alert(
+            "Confirmar Cancelamento",
+            "Tem certeza que deseja cancelar este pedido?",
+            [
+              {
+                text: "Não",
+                style: "cancel",
+              },
+              {
+                text: "Sim",
+                onPress: () => handleUpdateStatus(orderId, newStatus),
+              },
+            ]
+          );
+        }
+      } else {
+        handleUpdateStatus(orderId, newStatus);
+      }
+    },
+    [handleUpdateStatus]
   );
 
   const handleOrderPress = useCallback((order: IOrder) => {
@@ -235,6 +249,21 @@ export default function Pedidos() {
           <ActivityIndicator size="large" className="color-secundaria-700" />
         </View>
       )}
+
+      <ConfirmationModal
+        isVisible={isConfirmationModalVisible}
+        onClose={() => {
+          setIsConfirmationModalVisible(false);
+          setPendingStatusUpdate(null);
+        }}
+        onConfirm={() => {
+          if (pendingStatusUpdate) {
+            handleUpdateStatus(pendingStatusUpdate.orderId, pendingStatusUpdate.status);
+          }
+        }}
+        title="Confirmar Cancelamento"
+        message="Tem certeza que deseja cancelar este pedido?"
+      />
     </SafeAreaView>
   );
 }

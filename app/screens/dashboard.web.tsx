@@ -135,6 +135,7 @@ const Dashboard = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(2023);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [currentMonthRevenue, setCurrentMonthRevenue] = useState(0);
 
   const handleMonthChange = (selected: string[]) => {
     console.log("Selected months in Dashboard:", selected);
@@ -359,6 +360,12 @@ const Dashboard = () => {
 
         overallSales.sort((a, b) => new Date(a.date) - new Date(b.date));
 
+        const currentMonth = new Date().toLocaleString("pt-BR", { month: "short" });
+
+        const currentMonthRevenue = completedVendas
+          .filter((venda) => venda.createdAt.toDate().toLocaleString("pt-BR", { month: "short" }) === currentMonth)
+          .reduce((acc, venda) => acc + venda.total, 0);
+
         setSalesData({
           totalVendas: completedVendas.length,
           faturamentoTotal,
@@ -368,6 +375,7 @@ const Dashboard = () => {
           vendasPorMes,
         });
 
+        setCurrentMonthRevenue(currentMonthRevenue);
         setOverallSalesData(overallSales);
       } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);
@@ -396,7 +404,7 @@ const Dashboard = () => {
   };
 
   return (
-    <ScrollView className="p-4 space-y-4">
+    <ScrollView className="p-4 space-y-4 bg-gray-100">
       <Text className="text-2xl font-bold mb-6">Dashboard</Text>
 
       {/* Cards principais */}
@@ -415,11 +423,29 @@ const Dashboard = () => {
           })}
         />
         <CardDash
+          icon={<DollarSign className="h-8 w-8 text-green-500" />}
+          title="Faturamento Mês Atual"
+          value={currentMonthRevenue.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}
+        />
+        <CardDash
           icon={<AlertCircle className="h-8 w-8 text-yellow-500" />}
           title="Pedidos Pendentes"
           value={salesData.pedidosPendentes}
         />
       </View>
+
+      {/* Lists */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <BestSellingProducts
+          produtosMaisVendidos={salesData.produtosMaisVendidos}
+        />
+        <CategoriesChart
+          categoriasMaisVendidas={salesData.categoriasMaisVendidas}
+        />
+      </div>
 
       {/* Gráfico de vendas */}
       <Card className="mt-6">
@@ -438,16 +464,6 @@ const Dashboard = () => {
           />
         </CardContent>
       </Card>
-
-      {/* Lists */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <BestSellingProducts
-          produtosMaisVendidos={salesData.produtosMaisVendidos}
-        />
-        <CategoriesChart
-          categoriasMaisVendidas={salesData.categoriasMaisVendidas}
-        />
-      </div>
     </ScrollView>
   );
 };

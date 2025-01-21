@@ -236,7 +236,7 @@ const Relatorio = () => {
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1 px-5">
         <View className="mb-6">
-          <Text className="text-2xl font-bold text-gray-800 mb-4">
+          <Text className="text-2xl font-bold text-gray-800 mb-4 pt-4">
             Relatório de Vendas
           </Text>
           <View className="flex-row justify-end gap-3">
