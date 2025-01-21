@@ -34,6 +34,8 @@ import { OrderService } from "@/services/OrderService";
 import CardProdutoSimplesV2 from "@/components/CardProdutoSimplesV2";
 import { rtdb } from "@/firebaseConfig";
 import { NotificationService } from "@/services/notificationService";
+import OrderConfirmationModal from "@/components/OrderConfirmationModal";
+
 
 const CACHE_KEY = "user_products_cache";
 const CACHE_DURATION = 1000 * 60 * 5;
@@ -55,6 +57,8 @@ const Vender = () => {
   const [processingClicks, setProcessingClicks] = useState<
     Record<string, boolean>
   >({});
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [pendingOrderStatus, setPendingOrderStatus] = useState(null);
 
   const [selectedQuantities, setSelectedQuantities] = useState<
     Record<string, number>
@@ -386,12 +390,6 @@ const Vender = () => {
 
         const updatedCount = await CartService.getItemCount();
         setLocalCartCount(updatedCount);
-
-        alertaPersonalizado({
-          message: "Sucesso",
-          description: "Produto adicionado ao carrinho",
-          type: "success",
-        });
       } catch (error) {
         alertaPersonalizado({
           message: "Erro",
@@ -436,40 +434,63 @@ const Vender = () => {
     };
   }, []);
 
+
+
+  const handleConfirmOrder = async () => {
+    setShowConfirmationModal(false);
+    if (pendingOrderStatus) {
+      await processOrder(pendingOrderStatus);
+      setPendingOrderStatus(null);
+    }
+  };
+  
+  const handleCancelConfirmation = () => {
+    setShowConfirmationModal(false);
+    setPendingOrderStatus(null);
+  };
+  
   const handleOrder = async (status: "completed" | "pending") => {
+    if (!nomeCliente.trim()) {
+      setShowConfirmationModal(true);
+      setPendingOrderStatus(status);
+      return;
+    }
+    
+    await processOrder(status);
+  };
+  
+  const processOrder = async (status: "completed" | "pending") => {
     try {
       const items = await CartService.getItems();
       const total = items.reduce(
         (sum, item) => sum + item.value * item.quantity,
         0
       );
-
+  
       const itemsWithCategory = items.map((item) => ({
         ...item,
         categoryId: item.categoryId || "sem categoria",
       }));
-
+  
       const { orderRefId, idOrder } = await OrderService.createOrder(
         itemsWithCategory,
         total,
         status,
         nomeCliente
       );
-
-      // Envia notificação de novo pedido
+  
       await NotificationService.sendOrderCreatedNotification();
-
       await CartService.clearCart();
       cartEvents.emit("cartCleared");
       eventBus.emit("pedidoAtualizado");
-
+  
       const statusText = status === "completed" ? "finalizado" : "em aberto";
       alertaPersonalizado({
         message: "Sucesso",
         description: `Pedido ${idOrder} ${statusText}!`,
         type: "success",
       });
-
+  
       if (Platform.OS !== "web") {
         router.back();
       }
@@ -684,6 +705,11 @@ const Vender = () => {
         value={variablePrice}
         onChange={setVariablePrice}
         productTitle={selectedProduct?.title}
+      />
+      <OrderConfirmationModal
+        visible={showConfirmationModal}
+        onClose={handleCancelConfirmation}
+        onConfirm={handleConfirmOrder}
       />
     </SafeAreaView>
   );

@@ -107,7 +107,7 @@ export default function RootLayout() {
         </View>
       </View>
       <StatusBar style={colorScheme === "light" ? "dark" : "light"} />
-      <FlashMessage position="bottom" />
+      <FlashMessage position={Platform.OS === 'web' ? 'top' : 'bottom'} />
     </ThemeProvider>
   );
 }
