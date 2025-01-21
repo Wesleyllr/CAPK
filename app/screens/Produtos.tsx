@@ -187,7 +187,7 @@ const Produtos = () => {
   const handleEditProduct = (product) => {
     const isWeb = Platform.OS === "web";
 
-    const path = "/screens/EditarProduto"
+    const path = "/screens/EditarProduto";
 
     router.push({
       pathname: path,
@@ -290,10 +290,7 @@ const Produtos = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">
-      <Header
-        title="Meus Produtos"
-        onGoBack={() => router.back()}
-      />
+      <Header title="Meus Produtos" onGoBack={() => router.back()} />
 
       <View className="w-full h-12 mt-2">
         <ScrollView

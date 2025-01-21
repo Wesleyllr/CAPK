@@ -8,6 +8,7 @@ import {
 import { View } from "react-native";
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
 import { Text } from "react-native";
+import { useRouter } from "expo-router"; // Import useRouter
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
@@ -99,9 +100,17 @@ const renderActiveShape = (props) => {
 
 const CategoriesChart = ({ categoriasMaisVendidas }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const router = useRouter(); // Initialize router
 
   const onPieEnter = (_, index) => {
     setActiveIndex(index);
+  };
+
+  const handleCategoryClick = (categoryId) => {
+    router.push({
+      pathname: "/screens/Relatorio",
+      params: { categoryId },
+    });
   };
 
   if (!categoriasMaisVendidas) {
@@ -150,6 +159,7 @@ const CategoriesChart = ({ categoriasMaisVendidas }) => {
                 fill="#8884d8"
                 dataKey="valorTotal" // Change dataKey to valorTotal
                 onMouseEnter={onPieEnter}
+                onClick={(e) => handleCategoryClick(e.categoryId)} // Add onClick event
               >
                 {categoriasMaisVendidas.map((entry, index) => (
                   <Cell

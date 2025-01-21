@@ -40,6 +40,7 @@ export const getUserCategories = async () => {
     // Mapeia as categorias e retorna como uma lista
     const categories = querySnapshot.docs.map((doc) => ({
       id: doc.id, // ID do documento
+      categoryId: doc.id, // Add categoryId
       ...doc.data(), // Dados do documento
     }));
 
