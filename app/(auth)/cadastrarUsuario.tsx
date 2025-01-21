@@ -83,7 +83,8 @@ const Cadastro = ({ navigation }) => {
       // Cadastro bem-sucedido
       alertaPersonalizado({
         message: "Sucesso",
-        description: "Cadastro realizado com sucesso! Um e-mail de verificação foi enviado.",
+        description:
+          "Cadastro realizado com sucesso! Um e-mail de verificação foi enviado.",
         type: "success",
       });
       router.replace("/login"); // Navega para a tela de Login
@@ -144,7 +145,7 @@ const Cadastro = ({ navigation }) => {
         }}
       >
         <Image
-          source={images.logo}
+          source={images.logopapelaria}
           className={`mt-6 ${
             Platform.OS === "web" ? "max-w-[250px]" : "w-42 h-20"
           }`}
