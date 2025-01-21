@@ -115,7 +115,7 @@ export default function Cart() {
       // Make sure items include category information when creating order
       const itemsWithCategory = items.map((item) => ({
         ...item,
-        categoryId: item.category || "sem categoria", // Provide default if category is missing
+        categoryId: item.categoryId || "sem categoria", // Provide default if category is missing
       }));
 
       const { orderRefId, idOrder } = await OrderService.createOrder(

@@ -2,6 +2,9 @@ import { CONSTANTS } from "@/constants/constants";
 import { Timestamp } from "firebase/firestore";
 
 export const formatCurrency = (value: number) => {
+  if (value === 0 || value === undefined) {
+    return "R$ 0,00";
+  }
   return new Intl.NumberFormat(CONSTANTS.DATE_LOCALE, {
     style: "currency",
     currency: CONSTANTS.CURRENCY,

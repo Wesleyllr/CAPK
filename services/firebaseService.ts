@@ -21,16 +21,26 @@ export const fetchProducts = async (userId: string) => {
       title: data.title,
       categoryId: data.category,
       value: parseFloat(data.value || 0),
+      custo: parseFloat(data.custo || 0),
+      codeBar: data.codeBar,
+      isVariablePrice: data.isVariablePrice,
+      observations: data.observations // Adicionando observations aqui
     };
   });
+  console.log("Products map:", productsMap);
   return productsMap;
 };
 
 export const fetchSales = async (userId: string) => {
   const vendasRef = collection(db, `orders/${userId}/vendas`);
   const vendasSnapshot = await getDocs(vendasRef);
-  return vendasSnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  console.log("Sales snapshot:", vendasSnapshot.docs.map(doc => doc.data()));
+  return vendasSnapshot.docs.map((doc) => {
+    const data = doc.data();
+    console.log("Sale data:", data);
+    return {
+      id: doc.id,
+      ...data,
+    };
+  });
 };

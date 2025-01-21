@@ -370,8 +370,10 @@ const Vender = () => {
         quantity: 1,
         imageUrl: selectedProduct.imageUrl || undefined,
         observations: "",
-        categoryId: selectedProduct.categoryId || selectedProduct.category || "sem categoria",
-
+        categoryId:
+          selectedProduct.categoryId ||
+          selectedProduct.category ||
+          "sem categoria",
       };
 
       try {

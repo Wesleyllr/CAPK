@@ -30,30 +30,34 @@ const Relatorio = () => {
         ]);
 
         const formattedData = sales.flatMap((sale) => {
-          return sale.items.map((item) => {
-            const product = products[item.id] || {};
-            const category = categories[item.categoryId] || {};
-            console.log("Category:", category);
-            return {
-              // Informações do pedido (pai)
-              idOrder: sale.idOrder,
-              nomeCliente: sale.nomeCliente,
-              status: sale.status,
-              createdAt: sale.createdAt ? formatDate(sale.createdAt) : "N/A",
-              total: sale.total,
-              totalItems: sale.items.length,
-              // Informações do item
-              productTitle: product.title,
-              productValue: formatCurrency(product.value),
-              productCusto: formatCurrency(product.custo),
-              productCodeBar: product.codeBar,
-              productIsVariablePrice: product.isVariablePrice,
-              categoryName: category.name,
-              categoryCreatedAt: category.createdAt
-                ? formatDate(category.createdAt)
-                : "N/A",
-            };
-          });
+          return sale.items
+            .filter(
+              (item) =>
+                item.categoryId === categoryId && sale.status === "completed"
+            ) // Filter by categoryId and status
+            .map((item) => {
+              const product = products[item.id] || {};
+              const category = categories[item.categoryId] || {};
+
+              return {
+                // Informações do pedido (pai)
+                idOrder: sale.idOrder,
+                nomeCliente: sale.nomeCliente,
+                status: sale.status,
+                createdAt: sale.createdAt ? formatDate(sale.createdAt) : "N/A",
+                total: sale.total,
+                productObservations: item.observations || "N/A", // Ensure observations are captured
+                totalItems: sale.items.length,
+                // Informações do item
+                productQuantity: item.quantity,
+                productTitle: product.title,
+                productValue: formatCurrency(product.value),
+                productCusto: formatCurrency(product.custo),
+                productCodeBar: product.codeBar,
+                productIsVariablePrice: product.isVariablePrice,
+                categoryName: category.name,
+              };
+            });
         });
 
         setData(formattedData);
@@ -74,7 +78,9 @@ const Relatorio = () => {
       <Text style={styles.cell}>{item.status}</Text>
       <Text style={styles.cell}>{item.createdAt}</Text>
       <Text style={styles.cell}>{item.total}</Text>
+      <Text style={styles.cell}>{item.productObservations}</Text>
       <Text style={styles.cell}>{item.totalItems}</Text>
+      <Text style={styles.cell}>{item.productQuantity}</Text>
       <Text style={styles.cell}>{item.productTitle}</Text>
       <Text style={styles.cell}>{item.productValue}</Text>
       <Text style={styles.cell}>{item.productCusto}</Text>
@@ -83,7 +89,6 @@ const Relatorio = () => {
         {item.productIsVariablePrice ? "Sim" : "Não"}
       </Text>
       <Text style={styles.cell}>{item.categoryName}</Text>
-      <Text style={styles.cell}>{item.categoryCreatedAt}</Text>
     </View>
   );
 
@@ -117,19 +122,20 @@ const Relatorio = () => {
         keyExtractor={(item, index) => `${item.idOrder}-${index}`}
         ListHeaderComponent={() => (
           <View style={styles.header}>
-            <Text style={styles.headerCell}>Order ID</Text>
+            <Text style={styles.headerCell}>Nº Pedido</Text>
             <Text style={styles.headerCell}>Nome Cliente</Text>
             <Text style={styles.headerCell}>Status</Text>
-            <Text style={styles.headerCell}>Created At</Text>
-            <Text style={styles.headerCell}>Total</Text>
-            <Text style={styles.headerCell}>Total Items</Text>
-            <Text style={styles.headerCell}>Produto - Title</Text>
-            <Text style={styles.headerCell}>Produto - Value</Text>
-            <Text style={styles.headerCell}>Produto - Custo</Text>
-            <Text style={styles.headerCell}>Produto - CodeBar</Text>
-            <Text style={styles.headerCell}>Produto - IsVariablePrice</Text>
-            <Text style={styles.headerCell}>Categoria - Name</Text>
-            <Text style={styles.headerCell}>Categoria - CreatedAt</Text>
+            <Text style={styles.headerCell}>Criado em</Text>
+            <Text style={styles.headerCell}>Total ordem (R$)</Text>
+            <Text style={styles.headerCell}>Observação</Text>
+            <Text style={styles.headerCell}>Prod. Diferentes (Pedido)</Text>
+            <Text style={styles.headerCell}>Qtd. Produtos</Text>
+            <Text style={styles.headerCell}>Título</Text>
+            <Text style={styles.headerCell}>Preço Unit.</Text>
+            <Text style={styles.headerCell}>Custo Unit.</Text>
+            <Text style={styles.headerCell}>Código de Barra</Text>
+            <Text style={styles.headerCell}>Preço Variável</Text>
+            <Text style={styles.headerCell}>Categoria</Text>
           </View>
         )}
       />
