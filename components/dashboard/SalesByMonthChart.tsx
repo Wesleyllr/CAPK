@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View } from "react-native";
 import {
   ResponsiveContainer,
   BarChart,
@@ -9,31 +9,84 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import * as RadixSlider from "@radix-ui/react-slider";
 
-const SalesByMonthChart = ({
+interface SalesByMonthChartProps {
+  salesData: any;
+  selectedMonths: string[];
+  handleMonthChange: (values: number[]) => void;
+  filteredSalesData: any[];
+}
+
+const SalesByMonthChart: React.FC<SalesByMonthChartProps> = ({
   salesData,
   selectedMonths,
   handleMonthChange,
   filteredSalesData,
 }) => {
+  const [sliderValue, setSliderValue] = useState([0, 11]);
+  console.log("Filtered Sales Data:", filteredSalesData);
+
+  const monthLabels = [
+    "jan.",
+    "fev.",
+    "mar.",
+    "abr.",
+    "mai.",
+    "jun.",
+    "jul.",
+    "ago.",
+    "set.",
+    "out.",
+    "nov.",
+    "dez.",
+  ];
+
+  const handleSliderChange = (value: number[]) => {
+    setSliderValue(value);
+    const selected = [];
+    for (let i = value[0]; i <= value[1]; i++) {
+      selected.push(monthLabels[i]);
+    }
+    console.log("Slider value:", value);
+    console.log("Selected months:", selected);
+    handleMonthChange(selected);
+  };
+
   return (
-    <View>
-      <View className="flex flex-row mb-4 mx-4 flex-wrap">
-        {salesData.vendasPorMes.map((data) => (
-          <TouchableOpacity
-            key={data.mes}
-            className={`mr-4 mb-2 px-4 py-2 rounded-full ${
-              selectedMonths.includes(data.mes)
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 text-black"
-            }`}
-            onPress={() => handleMonthChange(data.mes)}
-          >
-            <Text>{data.mes}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View className="h-[300px]">
+    <div className="w-full space-y-4">
+      <div className="px-4">
+        <RadixSlider.Root
+          value={sliderValue}
+          onValueChange={handleSliderChange}
+          min={0}
+          max={11}
+          step={1}
+          className="relative flex items-center w-full h-4"
+        >
+          <RadixSlider.Track className="relative bg-gray-300 rounded-full h-1 grow">
+            <RadixSlider.Range className="absolute bg-blue-500 rounded-full h-full" />
+          </RadixSlider.Track>
+          <RadixSlider.Thumb
+            className="block w-4 h-4 bg-blue-500 rounded-full cursor-pointer"
+            aria-label="Month"
+          />
+          <RadixSlider.Thumb
+            className="block w-4 h-4 bg-blue-500 rounded-full cursor-pointer"
+            aria-label="Month"
+          />
+        </RadixSlider.Root>
+
+        <div className="flex justify-between mt-2">
+          {monthLabels.map((month, index) => (
+            <span key={index} className="text-xs">
+              {month}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={filteredSalesData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -43,8 +96,8 @@ const SalesByMonthChart = ({
             <Bar dataKey="total" fill="#2563eb" />
           </BarChart>
         </ResponsiveContainer>
-      </View>
-    </View>
+      </div>
+    </div>
   );
 };
 

@@ -134,22 +134,8 @@ const Dashboard = () => {
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const handleMonthChange = (values: number[]) => {
-    const monthLabels = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const selected = values.map((value) => monthLabels[value]);
+  const handleMonthChange = (selected: string[]) => {
+    console.log("Selected months in Dashboard:", selected);
     setSelectedMonths(selected);
   };
 
@@ -161,9 +147,29 @@ const Dashboard = () => {
     );
   };
 
-  const filteredSalesData = salesData.vendasPorMes.filter((data) =>
-    selectedMonths.length ? selectedMonths.includes(data.mes) : true
-  );
+  const monthLabels = [
+    "jan.",
+    "fev.",
+    "mar.",
+    "abr.",
+    "mai.",
+    "jun.",
+    "jul.",
+    "ago.",
+    "set.",
+    "out.",
+    "nov.",
+    "dez.",
+  ];
+
+  const filteredSalesData = salesData.vendasPorMes
+    .filter((data) => {
+      const result =
+        selectedMonths.length === 0 || selectedMonths.includes(data.mes);
+      console.log("Filtering data:", data, "Result:", result);
+      return result;
+    })
+    .sort((a, b) => monthLabels.indexOf(a.mes) - monthLabels.indexOf(b.mes));
 
   const filteredOverallSalesData = overallSalesData.filter((data) =>
     selectedCategories.length
@@ -325,6 +331,18 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    const handleTouchMove = (event) => {
+      // Your touchmove event logic here
+    };
+
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+
+    return () => {
+      window.removeEventListener("touchmove", handleTouchMove);
+    };
   }, []);
 
   const [activeIndex, setActiveIndex] = useState(0);
