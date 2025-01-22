@@ -6,6 +6,7 @@ import {
   Button,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,6 +27,7 @@ import {
 import { auth } from "@/firebaseConfig";
 import { formatDate, formatCurrency } from "@/utils/formatters";
 import Dashboard2 from "./Dashboard2";
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const Relatorio = () => {
   const { categoryId } = useLocalSearchParams();
@@ -34,6 +36,22 @@ const Relatorio = () => {
   const [sorting, setSorting] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const [startDate, setStartDate] = useState(new Date(new Date().setMonth(new Date().getMonth() - 1))); // Default to 1 month ago
+  const [endDate, setEndDate] = useState(new Date());
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+
+  const onStartDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || startDate;
+    setShowStartDatePicker(false);
+    setStartDate(currentDate);
+  };
+
+  const onEndDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || endDate;
+    setShowEndDatePicker(false);
+    setEndDate(currentDate);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,26 +65,66 @@ const Relatorio = () => {
           fetchCategories(userId),
         ]);
 
+        console.log("Fetched sales:", sales.length);
+
         const formattedData = sales.flatMap((sale) => {
+          // Converter timestamp do Firestore para Date
+          let saleDate;
+          if (sale.createdAt?.toDate) {
+            saleDate = sale.createdAt.toDate();
+          } else if (sale.createdAt) {
+            saleDate = new Date(sale.createdAt);
+          } else {
+            return [];
+          }
+
+          // Ajustar as datas de início e fim para considerar o dia completo no fuso horário local
+          const startOfDay = new Date(startDate);
+          startOfDay.setHours(0, 0, 0, 0);
+          // Ajustar para o início do dia em UTC
+          startOfDay.setMinutes(startOfDay.getMinutes() - startOfDay.getTimezoneOffset());
+
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          // Ajustar para o fim do dia em UTC
+          endOfDay.setMinutes(endOfDay.getMinutes() - endOfDay.getTimezoneOffset());
+
+          // Debug para verificar as datas
+          console.log({
+            saleDate: saleDate.toISOString(),
+            startOfDay: startOfDay.toISOString(),
+            endOfDay: endOfDay.toISOString(),
+            localSaleDate: saleDate.toLocaleString(),
+            localStartDay: startOfDay.toLocaleString(),
+            localEndDay: endOfDay.toLocaleString(),
+          });
+
+
+          // Verificar se a data da venda está dentro do intervalo
+          const isInDateRange = saleDate >= startOfDay && saleDate <= endOfDay;
+          
+          console.log('Venda está no intervalo:', isInDateRange);
+
+          if (!isInDateRange) return [];
+
           return sale.items
-            .filter(
-              (item) =>
-                item.categoryId === categoryId && sale.status === "completed"
-            ) // Filter by categoryId and status
+            .filter((item) => {
+              const matchesCategory = item.categoryId === categoryId;
+              const isCompleted = sale.status === "completed";
+              return matchesCategory && isCompleted;
+            })
             .map((item) => {
               const product = products[item.id] || {};
               const category = categories[item.categoryId] || {};
 
               return {
-                // Informações do pedido (pai)
                 idOrder: sale.idOrder,
                 nomeCliente: sale.nomeCliente,
                 status: sale.status,
                 createdAt: sale.createdAt ? formatDate(sale.createdAt) : "N/A",
                 total: sale.total,
-                productObservations: item.observations || "N/A", // Ensure observations are captured
+                productObservations: item.observations || "N/A",
                 totalItems: sale.items.length,
-                // Informações do item
                 productQuantity: item.quantity,
                 productTitle: product.title,
                 productValue: formatCurrency(product.value),
@@ -78,16 +136,17 @@ const Relatorio = () => {
             });
         });
 
+        console.log("Formatted data length:", formattedData.length);
         setData(formattedData);
       } catch (error) {
-        console.error("Erro ao buscar dados:", error.message);
+        console.error("Erro ao buscar dados:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [categoryId]);
+  }, [categoryId, startDate, endDate]);
 
   const prepareExportData = (rawData) => {
     return rawData.map((item) => ({
@@ -222,6 +281,80 @@ const Relatorio = () => {
     </View>
   );
 
+  const renderDatePicker = () => {
+    if (Platform.OS === 'web') {
+      return (
+        <View className="flex-row gap-3">
+          <input
+            type="date"
+            value={startDate.toISOString().split('T')[0]}
+            onChange={(e) => setStartDate(new Date(e.target.value))}
+            className="border border-[#e798a7] rounded px-3 py-2"
+          />
+          <input
+            type="date"
+            value={endDate.toISOString().split('T')[0]}
+            onChange={(e) => setEndDate(new Date(e.target.value))}
+            className="border border-[#e798a7] rounded px-3 py-2"
+          />
+        </View>
+      );
+    }
+
+    return (
+      <View className="flex-row gap-3">
+        <View>
+          <TouchableOpacity
+            className="bg-[#e798a7] px-4 py-2 rounded"
+            onPress={() => setShowStartDatePicker(true)}
+          >
+            <Text className="text-white font-medium text-sm">
+              {startDate.toLocaleDateString()}
+            </Text>
+          </TouchableOpacity>
+          {showStartDatePicker && (
+            <DateTimePicker
+              testID="startDatePicker"
+              value={startDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, selectedDate) => {
+                setShowStartDatePicker(false);
+                if (selectedDate) {
+                  setStartDate(selectedDate);
+                }
+              }}
+            />
+          )}
+        </View>
+        <View>
+          <TouchableOpacity
+            className="bg-[#e798a7] px-4 py-2 rounded"
+            onPress={() => setShowEndDatePicker(true)}
+          >
+            <Text className="text-white font-medium text-sm">
+              {endDate.toLocaleDateString()}
+            </Text>
+          </TouchableOpacity>
+          {showEndDatePicker && (
+            <DateTimePicker
+              testID="endDatePicker"
+              value={endDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, selectedDate) => {
+                setShowEndDatePicker(false);
+                if (selectedDate) {
+                  setEndDate(selectedDate);
+                }
+              }}
+            />
+          )}
+        </View>
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
@@ -239,7 +372,8 @@ const Relatorio = () => {
           <Text className="text-2xl font-bold text-gray-800 mb-4 pt-4">
             Relatório de Vendas
           </Text>
-          <View className="flex-row justify-end gap-3">
+          <View className="flex-row justify-end items-center gap-3">
+            {renderDatePicker()}
             <TouchableOpacity
               className="bg-[#e798a7] px-4 py-2 rounded"
               onPress={() => setShowColumnSelector(!showColumnSelector)}
