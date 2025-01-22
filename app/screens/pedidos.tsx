@@ -20,6 +20,8 @@ import eventBus from "@/utils/eventBus";
 import { onValue, ref } from "firebase/database";
 import { NotificationService } from "@/services/notificationService";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import { Ionicons } from "@expo/vector-icons";
+
 
 export default function Pedidos() {
   const [showPending, setShowPending] = useState(true);
@@ -31,7 +33,7 @@ export default function Pedidos() {
 
   const { orders, loading, refreshing, setRefreshing, fetchOrders } = useOrders(
     showPending,
-    10,
+    20,
     "createdAt",
     "desc"
   );
@@ -215,6 +217,14 @@ export default function Pedidos() {
             Finalizados
           </Text>
         </TouchableOpacity>
+        {Platform.OS === 'web' && (
+          <TouchableOpacity
+            className="w-9 h-9 ml-2 mr-4 bg-secundaria-400 items-center justify-center rounded-lg"
+            onPress={() => fetchOrders()}
+          >
+            <Ionicons name="refresh-outline" size={24} color="black" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
