@@ -25,7 +25,7 @@ import {
   fetchCategories,
 } from "@/services/firebaseService";
 import { auth } from "@/firebaseConfig";
-import { formatDate, formatCurrency } from "@/utils/formatters";
+import { formatDate, formatCurrency, formatDateHour, formatHourMinute } from "@/utils/formatters";
 import Dashboard2 from "./Dashboard2";
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -78,32 +78,22 @@ const Relatorio = () => {
             return [];
           }
 
-          // Ajustar as datas de início e fim para considerar o dia completo no fuso horário local
+          // Configurar datas de início e fim para comparação
           const startOfDay = new Date(startDate);
           startOfDay.setHours(0, 0, 0, 0);
-          // Ajustar para o início do dia em UTC
-          startOfDay.setMinutes(startOfDay.getMinutes() - startOfDay.getTimezoneOffset());
 
           const endOfDay = new Date(endDate);
           endOfDay.setHours(23, 59, 59, 999);
-          // Ajustar para o fim do dia em UTC
-          endOfDay.setMinutes(endOfDay.getMinutes() - endOfDay.getTimezoneOffset());
 
-          // Debug para verificar as datas
-          console.log({
-            saleDate: saleDate.toISOString(),
-            startOfDay: startOfDay.toISOString(),
-            endOfDay: endOfDay.toISOString(),
-            localSaleDate: saleDate.toLocaleString(),
-            localStartDay: startOfDay.toLocaleString(),
-            localEndDay: endOfDay.toLocaleString(),
-          });
-
+          // Converter a data da venda para a mesma base de comparação
+          const saleYear = saleDate.getFullYear();
+          const saleMonth = saleDate.getMonth();
+          const saleDay = saleDate.getDate();
+          const normalizedSaleDate = new Date(saleYear, saleMonth, saleDay, 
+            saleDate.getHours(), saleDate.getMinutes(), saleDate.getSeconds());
 
           // Verificar se a data da venda está dentro do intervalo
-          const isInDateRange = saleDate >= startOfDay && saleDate <= endOfDay;
-          
-          console.log('Venda está no intervalo:', isInDateRange);
+          const isInDateRange = normalizedSaleDate >= startOfDay && normalizedSaleDate <= endOfDay;
 
           if (!isInDateRange) return [];
 
@@ -122,6 +112,7 @@ const Relatorio = () => {
                 nomeCliente: sale.nomeCliente,
                 status: sale.status,
                 createdAt: sale.createdAt ? formatDate(sale.createdAt) : "N/A",
+                hora: sale.createdAt ? formatHourMinute(sale.createdAt) : "N/A",
                 total: sale.total,
                 productObservations: item.observations || "N/A",
                 totalItems: sale.items.length,
@@ -154,6 +145,7 @@ const Relatorio = () => {
       "Nome do Cliente": item.nomeCliente,
       Status: item.status,
       "Data de Criação": item.createdAt,
+      "Hora": item.hora,
       "Total do Pedido":
         typeof item.total === "number" ? item.total.toFixed(2) : item.total,
       Observações: item.productObservations,
@@ -186,6 +178,10 @@ const Relatorio = () => {
       }),
       columnHelper.accessor("createdAt", {
         header: "Criado em",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("hora", {
+        header: "Hora",
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor("total", {
@@ -525,6 +521,7 @@ const styles = StyleSheet.create({
   nomeClienteCell: { width: 150 },
   statusCell: { width: 100 },
   createdAtCell: { width: 100 },
+  horaCell: { width: 80 },
   totalCell: { width: 120 },
   productObservationsCell: { width: 200 },
   totalItemsCell: { width: 80 },
