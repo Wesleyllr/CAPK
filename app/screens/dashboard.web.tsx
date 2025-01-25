@@ -38,11 +38,13 @@ import {
 } from "lucide-react";
 import CategoriesChart from "@/components/dashboard/CategoriesChart";
 
-import { ScrollView, View, Text, TouchableOpacity } from "react-native"; // Import Text from react-native
+import { ScrollView, View, Text, TouchableOpacity, Alert } from "react-native"; // Import Text from react-native
 import { Checkbox } from "react-native-paper"; // Import Checkbox from react-native-paper
 import BestSellingProducts from "@/components/dashboard/BestSellingProducts"; // Import the new component
 import CardDash from "@/components/dashboard/CardDash"; // Import the new component
 import SalesByMonthChart from "@/components/dashboard/SalesByMonthChart"; // Import the new component
+import DashboardPinVerification from "@/components/DashboardPinVerification"; // Import the new component
+import { useFocusEffect } from "@react-navigation/native";
 
 const renderActiveShape = (props) => {
   const RADIAN = Math.PI / 180;
@@ -120,6 +122,9 @@ const renderActiveShape = (props) => {
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"]; // Define the COLORS array
 
 const Dashboard = () => {
+  const [pinVerified, setPinVerified] = useState(false);
+  const [userPin, setUserPin] = useState(null);
+  const [isPinEnabled, setIsPinEnabled] = useState(false);
   const [salesData, setSalesData] = useState({
     totalVendas: 0,
     faturamentoTotal: 0,
@@ -130,92 +135,43 @@ const Dashboard = () => {
   });
 
   const [overallSalesData, setOverallSalesData] = useState([]);
-
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(2023);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [currentMonthRevenue, setCurrentMonthRevenue] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const handleMonthChange = (selected: string[]) => {
-    console.log("Selected months in Dashboard:", selected);
-    setSelectedMonths(selected);
-  };
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
-  };
-
-  const handleYearChange = (year: number) => {
-    console.log("Selected year in Dashboard:", year);
-    setSelectedYear(year);
-  };
-
-  const monthLabels = [
-    "jan.",
-    "fev.",
-    "mar.",
-    "abr.",
-    "mai.",
-    "jun.",
-    "jul.",
-    "ago.",
-    "set.",
-    "out.",
-    "nov.",
-    "dez.",
-  ];
-
-  const filteredSalesData = salesData.vendasPorMes
-    .filter((data) => {
-      const result =
-        (selectedMonths.length === 0 || selectedMonths.includes(data.mes)) &&
-        data.ano === selectedYear;
-      console.log("Filtering data:", data, "Result:", result);
-      return result;
-    })
-    .sort((a, b) => monthLabels.indexOf(a.mes) - monthLabels.indexOf(b.mes));
-
-  const filteredOverallSalesData = overallSalesData.filter((data) =>
-    selectedCategories.length
-      ? data.items.some((item) => selectedCategories.includes(item.categoryId))
-      : true
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset pinVerified state whenever the component is focused
+      setPinVerified(false);
+    }, [])
   );
 
-  const filteredCategorySalesData = salesData.vendasPorMes
-    .filter((data) => {
-      const result =
-        (selectedMonths.length === 0 || selectedMonths.includes(data.mes)) &&
-        data.ano === selectedYear;
-      return result;
-    })
-    .map((data) => {
-      const monthData = { mes: data.mes };
-      salesData.categoriasMaisVendidas.forEach((category) => {
-        const categorySales = overallSalesData
-          .filter(
-            (sale) =>
-              new Date(sale.date).getMonth() ===
-                monthLabels.indexOf(data.mes) &&
-              sale.items.some((item) => item.categoryId === category.name)
-          )
-          .reduce((acc, sale) => {
-            const categoryItem = sale.items.find(
-              (item) => item.categoryId === category.name
-            );
-            return (
-              acc +
-              (categoryItem ? categoryItem.value * categoryItem.quantity : 0)
-            );
-          }, 0);
-        monthData[category.name] = categorySales;
-      });
-      return monthData;
-    });
+  useEffect(() => {
+    const checkPinRequirement = async () => {
+      try {
+        const userId = auth.currentUser?.uid;
+        if (!userId) return;
+
+        const userDoc = await getDoc(doc(db, "users", userId));
+        const userData = userDoc.data();
+        
+        if (userData?.dashboardPinEnabled) {
+          setIsPinEnabled(true);
+          setUserPin(userData.dashboardPin);
+        } else {
+          setPinVerified(true); // Skip verification if PIN is not enabled
+        }
+      } catch (error) {
+        console.error("Error checking PIN requirement:", error);
+        Alert.alert("Erro", "Falha ao verificar requisitos de PIN");
+      }
+    };
+
+    checkPinRequirement();
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -382,8 +338,10 @@ const Dashboard = () => {
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    if (pinVerified) {
+      fetchDashboardData();
+    }
+  }, [pinVerified]);
 
   useEffect(() => {
     const handleTouchMove = (event) => {
@@ -397,11 +355,108 @@ const Dashboard = () => {
     };
   }, []);
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  useEffect(() => {
+    // Reset pinVerified state whenever the component mounts
+    setPinVerified(false);
+  }, []);
+
+  const handleMonthChange = (selected: string[]) => {
+    console.log("Selected months in Dashboard:", selected);
+    setSelectedMonths(selected);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handleYearChange = (year: number) => {
+    console.log("Selected year in Dashboard:", year);
+    setSelectedYear(year);
+  };
+
+  const monthLabels = [
+    "jan.",
+    "fev.",
+    "mar.",
+    "abr.",
+    "mai.",
+    "jun.",
+    "jul.",
+    "ago.",
+    "set.",
+    "out.",
+    "nov.",
+    "dez.",
+  ];
+
+  const filteredSalesData = salesData.vendasPorMes
+    .filter((data) => {
+      const result =
+        (selectedMonths.length === 0 || selectedMonths.includes(data.mes)) &&
+        data.ano === selectedYear;
+      console.log("Filtering data:", data, "Result:", result);
+      return result;
+    })
+    .sort((a, b) => monthLabels.indexOf(a.mes) - monthLabels.indexOf(b.mes));
+
+  const filteredOverallSalesData = overallSalesData.filter((data) =>
+    selectedCategories.length
+      ? data.items.some((item) => selectedCategories.includes(item.categoryId))
+      : true
+  );
+
+  const filteredCategorySalesData = salesData.vendasPorMes
+    .filter((data) => {
+      const result =
+        (selectedMonths.length === 0 || selectedMonths.includes(data.mes)) &&
+        data.ano === selectedYear;
+      return result;
+    })
+    .map((data) => {
+      const monthData = { mes: data.mes };
+      salesData.categoriasMaisVendidas.forEach((category) => {
+        const categorySales = overallSalesData
+          .filter(
+            (sale) =>
+              new Date(sale.date).getMonth() ===
+                monthLabels.indexOf(data.mes) &&
+              sale.items.some((item) => item.categoryId === category.name)
+          )
+          .reduce((acc, sale) => {
+            const categoryItem = sale.items.find(
+              (item) => item.categoryId === category.name
+            );
+            return (
+              acc +
+              (categoryItem ? categoryItem.value * categoryItem.quantity : 0)
+            );
+          }, 0);
+        monthData[category.name] = categorySales;
+      });
+      return monthData;
+    });
 
   const onPieEnter = (_, index) => {
     setActiveIndex(index);
   };
+
+  const handlePinVerification = (success: boolean) => {
+    setPinVerified(success);
+  };
+
+  // Don't fetch or show data until PIN is verified
+  if (isPinEnabled && !pinVerified) {
+    return (
+      <DashboardPinVerification 
+        onVerify={handlePinVerification}
+        correctPin={userPin}
+      />
+    );
+  }
 
   return (
     <ScrollView className="p-4 space-y-4 bg-gray-100">
