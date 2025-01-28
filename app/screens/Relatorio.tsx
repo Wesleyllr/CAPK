@@ -25,9 +25,14 @@ import {
   fetchCategories,
 } from "@/services/firebaseService";
 import { auth } from "@/firebaseConfig";
-import { formatDate, formatCurrency, formatDateHour, formatHourMinute } from "@/utils/formatters";
+import {
+  formatDate,
+  formatCurrency,
+  formatDateHour,
+  formatHourMinute,
+} from "@/utils/formatters";
 import Dashboard2 from "./Dashboard2";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const Relatorio = () => {
   const { categoryId } = useLocalSearchParams();
@@ -36,26 +41,55 @@ const Relatorio = () => {
   const [sorting, setSorting] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [showColumnSelector, setShowColumnSelector] = useState(false);
-  const [startDate, setStartDate] = useState(new Date(new Date().setMonth(new Date().getMonth() - 1))); // Default to 1 month ago
+  const [startDate, setStartDate] = useState(
+    new Date(new Date().setMonth(new Date().getMonth() - 1))
+  ); // Default to 1 month ago
   const [endDate, setEndDate] = useState(new Date());
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
+  const isValidDateRange = () => {
+    return startDate <= endDate;
+  };
+
+  const normalizeDate = (date) => {
+    if (!date) return null;
+    try {
+      const normalizedDate = new Date(date);
+      if (isNaN(normalizedDate.getTime())) return null;
+      return normalizedDate;
+    } catch (error) {
+      console.error("Erro ao normalizar data:", error);
+      return null;
+    }
+  };
+
+  const adjustDate = (date) => {
+    const adjusted = new Date(date);
+    adjusted.setDate(adjusted.getDate() + 1);
+    return adjusted;
+  };
+
   const onStartDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || startDate;
     setShowStartDatePicker(false);
-    setStartDate(currentDate);
+    setStartDate(adjustDate(currentDate));
   };
 
   const onEndDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || endDate;
     setShowEndDatePicker(false);
-    setEndDate(currentDate);
+    setEndDate(adjustDate(currentDate));
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!isValidDateRange()) {
+          console.error("Data inicial deve ser anterior ou igual à data final");
+          return;
+        }
+
         const userId = auth.currentUser?.uid;
         if (!userId) throw new Error("Usuário não autenticado.");
 
@@ -68,32 +102,31 @@ const Relatorio = () => {
         console.log("Fetched sales:", sales.length);
 
         const formattedData = sales.flatMap((sale) => {
-          // Converter timestamp do Firestore para Date
-          let saleDate;
-          if (sale.createdAt?.toDate) {
-            saleDate = sale.createdAt.toDate();
-          } else if (sale.createdAt) {
-            saleDate = new Date(sale.createdAt);
-          } else {
-            return [];
-          }
+          let saleDate = normalizeDate(
+            sale.createdAt?.toDate?.() || sale.createdAt
+          );
+          if (!saleDate) return [];
 
-          // Configurar datas de início e fim para comparação
           const startOfDay = new Date(startDate);
           startOfDay.setHours(0, 0, 0, 0);
 
           const endOfDay = new Date(endDate);
           endOfDay.setHours(23, 59, 59, 999);
 
-          // Converter a data da venda para a mesma base de comparação
           const saleYear = saleDate.getFullYear();
           const saleMonth = saleDate.getMonth();
           const saleDay = saleDate.getDate();
-          const normalizedSaleDate = new Date(saleYear, saleMonth, saleDay, 
-            saleDate.getHours(), saleDate.getMinutes(), saleDate.getSeconds());
+          const normalizedSaleDate = new Date(
+            saleYear,
+            saleMonth,
+            saleDay,
+            saleDate.getHours(),
+            saleDate.getMinutes(),
+            saleDate.getSeconds()
+          );
 
-          // Verificar se a data da venda está dentro do intervalo
-          const isInDateRange = normalizedSaleDate >= startOfDay && normalizedSaleDate <= endOfDay;
+          const isInDateRange =
+            normalizedSaleDate >= startOfDay && normalizedSaleDate <= endOfDay;
 
           if (!isInDateRange) return [];
 
@@ -107,6 +140,9 @@ const Relatorio = () => {
               const product = products[item.id] || {};
               const category = categories[item.categoryId] || {};
 
+              // Usar o valor da venda ao invés do valor do produto
+              const itemValue = item.value || product.value;
+
               return {
                 idOrder: sale.idOrder,
                 nomeCliente: sale.nomeCliente,
@@ -118,7 +154,8 @@ const Relatorio = () => {
                 totalItems: sale.items.length,
                 productQuantity: item.quantity,
                 productTitle: product.title,
-                productValue: formatCurrency(product.value),
+                productValue: formatCurrency(itemValue),
+                productTotalValue: formatCurrency(item.quantity * itemValue),
                 productCusto: formatCurrency(product.custo),
                 productCodeBar: product.codeBar,
                 productIsVariablePrice: product.isVariablePrice,
@@ -140,12 +177,19 @@ const Relatorio = () => {
   }, [categoryId, startDate, endDate]);
 
   const prepareExportData = (rawData) => {
-    return rawData.map((item) => ({
+    console.log("Raw data length:", rawData.length);
+
+    // Removemos o filtro de data pois os dados já estão filtrados corretamente
+    const filteredData = rawData;
+
+    console.log("Filtered data length:", filteredData.length);
+
+    return filteredData.map((item) => ({
       "Número do Pedido": item.idOrder,
       "Nome do Cliente": item.nomeCliente,
       Status: item.status,
       "Data de Criação": item.createdAt,
-      "Hora": item.hora,
+      Hora: item.hora,
       "Total do Pedido":
         typeof item.total === "number" ? item.total.toFixed(2) : item.total,
       Observações: item.productObservations,
@@ -153,6 +197,7 @@ const Relatorio = () => {
       Quantidade: item.productQuantity,
       Produto: item.productTitle,
       "Preço Unitário": item.productValue?.replace("R$", "").trim(),
+      "Preço Total Produto": item.productTotalValue?.replace("R$", "").trim(),
       "Custo Unitário": item.productCusto?.replace("R$", "").trim(),
       "Código de Barras": item.productCodeBar,
       "Preço Variável": item.productIsVariablePrice ? "Sim" : "Não",
@@ -206,6 +251,10 @@ const Relatorio = () => {
       }),
       columnHelper.accessor("productValue", {
         header: "Preço Unit.",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("productTotalValue", {
+        header: "Preço total prod.",
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor("productCusto", {
@@ -278,19 +327,25 @@ const Relatorio = () => {
   );
 
   const renderDatePicker = () => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       return (
         <View className="flex-row gap-3">
           <input
             type="date"
-            value={startDate.toISOString().split('T')[0]}
-            onChange={(e) => setStartDate(new Date(e.target.value))}
+            value={
+              new Date(startDate.getTime() - 86400000)
+                .toISOString()
+                .split("T")[0]
+            }
+            onChange={(e) => setStartDate(adjustDate(new Date(e.target.value)))}
             className="border border-[#e798a7] rounded px-3 py-2"
           />
           <input
             type="date"
-            value={endDate.toISOString().split('T')[0]}
-            onChange={(e) => setEndDate(new Date(e.target.value))}
+            value={
+              new Date(endDate.getTime() - 86400000).toISOString().split("T")[0]
+            }
+            onChange={(e) => setEndDate(adjustDate(new Date(e.target.value)))}
             className="border border-[#e798a7] rounded px-3 py-2"
           />
         </View>
@@ -305,19 +360,19 @@ const Relatorio = () => {
             onPress={() => setShowStartDatePicker(true)}
           >
             <Text className="text-white font-medium text-sm">
-              {startDate.toLocaleDateString()}
+              {new Date(startDate.getTime() - 86400000).toLocaleDateString()}
             </Text>
           </TouchableOpacity>
           {showStartDatePicker && (
             <DateTimePicker
               testID="startDatePicker"
-              value={startDate}
+              value={new Date(startDate.getTime() - 86400000)}
               mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={(event, selectedDate) => {
                 setShowStartDatePicker(false);
                 if (selectedDate) {
-                  setStartDate(selectedDate);
+                  setStartDate(adjustDate(selectedDate));
                 }
               }}
             />
@@ -329,19 +384,19 @@ const Relatorio = () => {
             onPress={() => setShowEndDatePicker(true)}
           >
             <Text className="text-white font-medium text-sm">
-              {endDate.toLocaleDateString()}
+              {new Date(endDate.getTime() - 86400000).toLocaleDateString()}
             </Text>
           </TouchableOpacity>
           {showEndDatePicker && (
             <DateTimePicker
               testID="endDatePicker"
-              value={endDate}
+              value={new Date(endDate.getTime() - 86400000)}
               mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={(event, selectedDate) => {
                 setShowEndDatePicker(false);
                 if (selectedDate) {
-                  setEndDate(selectedDate);
+                  setEndDate(adjustDate(selectedDate));
                 }
               }}
             />

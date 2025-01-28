@@ -35,16 +35,27 @@ const Dashboard2 = ({ data }) => {
     if (!data?.length) return null;
 
     // Total de vendas
-    const totalSales = data.reduce(
-      (acc, item) => acc + Number(item.total || 0),
-      0
-    );
+    const totalSales = data.reduce((acc, item) => {
+      const totalValue = parseFloat(
+        item.productTotalValue
+          ?.replace("R$", "")
+          .replace(".", "")
+          .replace(",", ".") || 0
+      );
+      return acc + totalValue;
+    }, 0);
 
     // Vendas por categoria
     const salesByCategory = data.reduce((acc, item) => {
       const category = item.categoryName;
+      const totalValue = parseFloat(
+        item.productTotalValue
+          ?.replace("R$", "")
+          .replace(".", "")
+          .replace(",", ".") || 0
+      );
       if (!acc[category]) acc[category] = 0;
-      acc[category] += Number(item.total || 0);
+      acc[category] += totalValue;
       return acc;
     }, {});
 

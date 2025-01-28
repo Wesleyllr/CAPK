@@ -25,7 +25,7 @@ export default function Cart() {
   const [items, setItems] = useState<ICartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCompactView, setIsCompactView] = useState(false);
-  const [nomeCliente, setnomeCliente] = useState("");
+  const [nomeCliente, setNomeCliente] = useState("");
 
   useEffect(() => {
     const loadViewMode = async () => {
@@ -202,7 +202,7 @@ export default function Cart() {
         <FormFieldProduct
           title="Nome do Cliente"
           value={nomeCliente}
-          handleChangeText={setnomeCliente}
+          handleChangeText={setNomeCliente}
           placeholder="Digite o nome do cliente"
         />
         <Text className="text-xl font-bold text-secundaria-900 mb-4">

@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "@/components/CustomHeader";
 import { router } from "expo-router";
 import { Modal as RNModal } from "react-native"; // Adicione este import
+import PinVerificationModal from "@/components/PinVerificationModal";
 
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([]);
@@ -29,6 +30,7 @@ const CategoryManagement = () => {
   const [confirmDeleteModalVisible, setConfirmDeleteModalVisible] =
     useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   const fetchCategories = async () => {
     try {
@@ -119,6 +121,16 @@ const CategoryManagement = () => {
     }
   };
 
+  const handleDeleteRequest = (category) => {
+    setCategoryToDelete(category);
+    setShowPinModal(true);
+  };
+
+  const handlePinSuccess = () => {
+    setShowPinModal(false);
+    setConfirmDeleteModalVisible(true);
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-primaria">
       <Header
@@ -155,10 +167,7 @@ const CategoryManagement = () => {
                 <Text className="text-white">Editar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => {
-                  setCategoryToDelete(category);
-                  setConfirmDeleteModalVisible(true);
-                }}
+                onPress={() => handleDeleteRequest(category)}
                 className="bg-terceira-600 p-2 rounded-lg"
               >
                 <Text className="text-white">Excluir</Text>
@@ -268,6 +277,12 @@ const CategoryManagement = () => {
           </View>
         </View>
       </RNModal>
+
+      <PinVerificationModal
+        isVisible={showPinModal}
+        onClose={() => setShowPinModal(false)}
+        onSuccess={handlePinSuccess}
+      />
     </SafeAreaView>
   );
 };
