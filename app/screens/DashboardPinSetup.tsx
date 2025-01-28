@@ -35,10 +35,11 @@ const DashboardPinSetup = () => {
       const userId = auth.currentUser?.uid;
       if (!userId) throw new Error("Usuário não autenticado");
 
-      await updateDoc(doc(db, "users", userId), {
+      // Update the config document instead of the user document
+      await updateDoc(doc(db, `users/${userId}/config/config`), {
         dashboardPin: pin,
         dashboardPinCreatedAt: new Date(),
-        dashboardPinEnabled: true, // Add this line
+        dashboardPinEnabled: true,
       });
 
       Alert.alert("Sucesso", "PIN configurado com sucesso!");

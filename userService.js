@@ -50,6 +50,30 @@ export const getUserCategories = async () => {
   }
 };
 
+export const getUserConfig = async () => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("Usuário não está autenticado.");
+  }
+
+  // Referência ao documento "config" dentro da subcoleção "config"
+  const configDocRef = doc(db, `users/${user.uid}/config/config`);
+
+  try {
+    const configDocSnap = await getDoc(configDocRef);
+
+    if (configDocSnap.exists()) {
+      return configDocSnap.data(); // Retorna os dados do documento "config"
+    } else {
+      throw new Error("Documento de configuração não encontrado.");
+    }
+  } catch (error) {
+    throw new Error(
+      "Erro ao buscar o documento de configuração: " + error.message
+    );
+  }
+};
 // Função para obter o UID do usuário
 export const getUserUid = async () => {
   const user = auth.currentUser;

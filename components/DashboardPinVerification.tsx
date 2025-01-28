@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,15 +6,18 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-} from 'react-native';
+} from "react-native";
 
 interface DashboardPinVerificationProps {
   onVerify: (success: boolean) => void;
   correctPin: string;
 }
 
-const DashboardPinVerification = ({ onVerify, correctPin }: DashboardPinVerificationProps) => {
-  const [pin, setPin] = useState('');
+const DashboardPinVerification = ({
+  onVerify,
+  correctPin,
+}: DashboardPinVerificationProps) => {
+  const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
@@ -23,8 +26,8 @@ const DashboardPinVerification = ({ onVerify, correctPin }: DashboardPinVerifica
       if (pin === correctPin) {
         onVerify(true);
       } else {
-        Alert.alert('Erro', 'PIN incorreto');
-        setPin('');
+        Alert.alert("Erro", "PIN incorreto");
+        setPin("");
         onVerify(false);
       }
     } finally {
@@ -51,7 +54,7 @@ const DashboardPinVerification = ({ onVerify, correctPin }: DashboardPinVerifica
           onPress={handleVerify}
           disabled={loading || pin.length !== 4}
           className={`bg-terceira-500 p-4 rounded-lg ${
-            (loading || pin.length !== 4) ? 'opacity-50' : ''
+            loading || pin.length !== 4 ? "opacity-50" : ""
           }`}
         >
           {loading ? (

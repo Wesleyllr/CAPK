@@ -26,6 +26,7 @@ import { getUserInfo } from "@/userService"; // Importando o serviço para obter
 import eventBus from "@/utils/eventBus";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import { IOrder } from "@/types/types";
+import PinVerificationModal from "@/components/PinVerificationModal";
 
 const Home = () => {
   const router = useRouter();
@@ -143,17 +144,50 @@ const Home = () => {
     fetchData();
   };
 
-  const StatCard = ({ title, value }) => (
-    <View className="bg-secundaria-50 p-3 rounded-lg mx-1">
-      <Text className="text-quinta text-sm ">{title}</Text>
-      <Text className="text-secundaria-900 text-lg font-bold">
-        {new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }).format(value)}
-      </Text>
-    </View>
-  );
+  const StatCard = ({ title, value }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const [showPinModal, setShowPinModal] = useState(false);
+
+    const handleEyePress = () => {
+      if (!isVisible) {
+        setShowPinModal(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    const handlePinSuccess = () => {
+      setIsVisible(true);
+    };
+
+    return (
+      <View className="bg-secundaria-50 p-3 rounded-lg mx-1">
+        <View className="flex-row justify-between items-center">
+          <Text className="text-quinta text-sm">{title}</Text>
+          <TouchableOpacity onPress={handleEyePress} className="pl-2">
+            <Ionicons
+              name={isVisible ? "eye-outline" : "eye-off-outline"}
+              size={16}
+              color="#7f5d5a"
+            />
+          </TouchableOpacity>
+        </View>
+        <Text className="text-secundaria-900 text-lg font-bold">
+          {isVisible
+            ? new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              }).format(value)
+            : "••••••"}
+        </Text>
+        <PinVerificationModal
+          isVisible={showPinModal}
+          onClose={() => setShowPinModal(false)}
+          onSuccess={handlePinSuccess}
+        />
+      </View>
+    );
+  };
 
   const QuickAction = ({ icon, title, onPress, badgeCount }) => (
     <TouchableOpacity
@@ -243,7 +277,9 @@ const Home = () => {
               <Text className="flex-1 font-thin text-2xl text-secundaria-900">
                 Olá, {userInfo.name}
               </Text>
-              <TouchableOpacity onPress={() => router.push("/perfil")}>
+              <TouchableOpacity
+                onPress={() => router.push("/screens/DashboardPinSetup")}
+              >
                 <Image
                   className="w-12 h-12 border-2 border-secundaria-700 rounded-full"
                   source={

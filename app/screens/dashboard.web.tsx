@@ -155,12 +155,14 @@ const Dashboard = () => {
         const userId = auth.currentUser?.uid;
         if (!userId) return;
 
-        const userDoc = await getDoc(doc(db, "users", userId));
-        const userData = userDoc.data();
-        
-        if (userData?.dashboardPinEnabled) {
+        const configDoc = await getDoc(
+          doc(db, `users/${userId}/config/config`)
+        );
+        const configData = configDoc.data();
+
+        if (configData?.dashboardPinEnabled) {
           setIsPinEnabled(true);
-          setUserPin(userData.dashboardPin);
+          setUserPin(configData.dashboardPin);
         } else {
           setPinVerified(true); // Skip verification if PIN is not enabled
         }
@@ -316,10 +318,17 @@ const Dashboard = () => {
 
         overallSales.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        const currentMonth = new Date().toLocaleString("pt-BR", { month: "short" });
+        const currentMonth = new Date().toLocaleString("pt-BR", {
+          month: "short",
+        });
 
         const currentMonthRevenue = completedVendas
-          .filter((venda) => venda.createdAt.toDate().toLocaleString("pt-BR", { month: "short" }) === currentMonth)
+          .filter(
+            (venda) =>
+              venda.createdAt
+                .toDate()
+                .toLocaleString("pt-BR", { month: "short" }) === currentMonth
+          )
           .reduce((acc, venda) => acc + venda.total, 0);
 
         setSalesData({
@@ -451,7 +460,7 @@ const Dashboard = () => {
   // Don't fetch or show data until PIN is verified
   if (isPinEnabled && !pinVerified) {
     return (
-      <DashboardPinVerification 
+      <DashboardPinVerification
         onVerify={handlePinVerification}
         correctPin={userPin}
       />
