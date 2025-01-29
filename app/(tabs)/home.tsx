@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Platform,
+  BackHandler, // Add this import
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -261,6 +262,35 @@ const Home = () => {
     );
   };
 
+  // Add back button handler
+  useEffect(() => {
+    const backAction = () => {
+      Alert.alert(
+        "Sair do Aplicativo",
+        "Deseja realmente sair do aplicativo?",
+        [
+          {
+            text: "Cancelar",
+            onPress: () => null,
+            style: "cancel",
+          },
+          {
+            text: "Sim",
+            onPress: () => BackHandler.exitApp(),
+          },
+        ]
+      );
+      return true; // Prevents default back button behavior
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
   return (
     <SafeAreaView className="flex-1 bg-primaria">
       <ScrollView
@@ -277,9 +307,7 @@ const Home = () => {
               <Text className="flex-1 font-thin text-2xl text-secundaria-900">
                 Olá, {userInfo.name}
               </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/screens/DashboardPinSetup")}
-              >
+              <TouchableOpacity onPress={() => router.push("/perfil")}>
                 <Image
                   className="w-12 h-12 border-2 border-secundaria-700 rounded-full"
                   source={
