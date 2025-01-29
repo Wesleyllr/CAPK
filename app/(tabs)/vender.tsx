@@ -638,7 +638,11 @@ const Vender = () => {
               {/* CONTADOR PARA VERSÃO WEB */}
               {Platform.OS === "web" && (
                 <TouchableOpacity onPress={toggleShowSelectedOnly}>
-                  <View className="h-12 w-12 mr-2 bg-red-500 justify-center items-center rounded-full">
+                  <View
+                    className={`h-12 w-12 mr-2 ${
+                      showSelectedOnly ? "bg-red-500" : "bg-green-500"
+                    } justify-center items-center rounded-full`}
+                  >
                     <Text className="mx-2 text-xl font-bold text-white">
                       {localCartCount}
                     </Text>

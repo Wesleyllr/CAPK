@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,11 @@ import { NotificationService } from "@/services/notificationService";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router"; // Import useRouter
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const CACHE_KEY = "orders_cache";
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+const ORDERS_PER_PAGE = 20;
 
 export default function Pedidos() {
   const [showPending, setShowPending] = useState(true);
@@ -34,6 +39,9 @@ export default function Pedidos() {
     orderId: string;
     status: OrderStatus;
   } | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const lastUpdateRef = useRef<number>(0);
 
   const { orders, loading, refreshing, setRefreshing, fetchOrders } = useOrders(
     showPending,
@@ -43,6 +51,69 @@ export default function Pedidos() {
   );
 
   const router = useRouter(); // Initialize router
+
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRefreshTimeRef = useRef<number>(0);
+
+  const loadCachedOrders = async () => {
+    try {
+      const cached = await AsyncStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          return data;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Erro ao carregar cache:", error);
+      return null;
+    }
+  };
+
+  const cacheOrders = async (data: any[]) => {
+    try {
+      await AsyncStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          data,
+          timestamp: Date.now(),
+        })
+      );
+    } catch (error) {
+      console.error("Erro ao salvar cache:", error);
+    }
+  };
+
+  const debouncedFetchOrders = useCallback(() => {
+    // Prevent multiple refreshes within 3 seconds
+    const now = Date.now();
+    if (now - lastRefreshTimeRef.current < 2000) {
+      return;
+    }
+
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+
+    refreshTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Tenta carregar do cache primeiro
+        const cachedData = await loadCachedOrders();
+        if (cachedData) {
+          // Use os dados do cache
+          // Atualize seu estado aqui
+          return;
+        }
+
+        // Se não houver cache ou estiver expirado, busque do Firebase
+        await fetchOrders();
+        lastUpdateRef.current = now;
+      } catch (error) {
+        console.error("Erro ao buscar pedidos:", error);
+      }
+    }, 300);
+  }, [fetchOrders]);
 
   const handleUpdateStatus = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
@@ -164,37 +235,66 @@ export default function Pedidos() {
 
   useEffect(() => {
     const handlePedidoAtualizado = () => {
-      fetchOrders();
+      debouncedFetchOrders();
     };
 
     eventBus.on("pedidoAtualizado", handlePedidoAtualizado);
 
     return () => {
       eventBus.off("pedidoAtualizado", handlePedidoAtualizado);
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
     };
-  }, [fetchOrders]);
+  }, [debouncedFetchOrders]);
 
   useEffect(() => {
     const ordersRef = ref(rtdb, "orders");
-    const unsubscribe = onValue(ordersRef, (snapshot) => {
-      if (snapshot.exists()) {
-        fetchOrders();
+    let unsubscribe: () => void;
+
+    // Limita as atualizações em tempo real
+    const setupRealTimeUpdates = () => {
+      unsubscribe = onValue(
+        ordersRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const now = Date.now();
+            // Atualiza apenas se passou tempo suficiente desde a última atualização
+            if (now - lastUpdateRef.current >= 2000) {
+              debouncedFetchOrders();
+              lastUpdateRef.current = now;
+            }
+          }
+        },
+        {
+          // Reduz a frequência de atualizações
+          onlyOnce: false,
+        }
+      );
+    };
+
+    setupRealTimeUpdates();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
       }
-    });
-
-    return () => unsubscribe();
-  }, [fetchOrders]);
-
-  useEffect(() => {
-    const ordersRef = ref(rtdb, "orders/refresh");
-    const unsubscribe = onValue(ordersRef, (snapshot) => {
-      if (snapshot.exists()) {
-        fetchOrders();
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
       }
-    });
+    };
+  }, [debouncedFetchOrders]);
 
-    return () => unsubscribe();
-  }, [fetchOrders]);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    debouncedFetchOrders();
+  }, [debouncedFetchOrders]);
+
+  const loadMoreOrders = () => {
+    if (hasMore && !loading) {
+      setPage((prev) => prev + 1);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">
@@ -237,7 +337,7 @@ export default function Pedidos() {
         {Platform.OS === "web" && (
           <TouchableOpacity
             className="w-9 h-9 ml-2 mr-4 bg-secundaria-400 items-center justify-center rounded-lg"
-            onPress={() => fetchOrders()}
+            onPress={debouncedFetchOrders}
           >
             <Ionicons name="refresh-outline" size={24} color="black" />
           </TouchableOpacity>
@@ -253,15 +353,18 @@ export default function Pedidos() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16 }}
           refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            fetchOrders();
-          }}
+          onRefresh={onRefresh}
           ListEmptyComponent={
             <Text className="text-center text-quinta">
               Nenhum pedido {showPending ? "pendente" : "finalizado"}
             </Text>
           }
+          onEndReached={loadMoreOrders}
+          onEndReachedThreshold={0.5}
+          initialNumToRender={ORDERS_PER_PAGE}
+          maxToRenderPerBatch={ORDERS_PER_PAGE}
+          windowSize={5}
+          removeClippedSubviews={true}
         />
       )}
 
