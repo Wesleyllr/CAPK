@@ -40,7 +40,7 @@ const OrderDetailsModal = ({
       <View className="flex-1 justify-center items-center bg-black/50">
         <View className="bg-primaria p-5 rounded-lg w-4/5">
           <Text className="text-xl font-bold text-center mb-4">
-            Detalhes do Pedido #{order.id.slice(-CONSTANTS.SLICE_LENGTH)}
+            Detalhes do Pedido #{order.idOrder.slice(-4)}
           </Text>
           <FlatList
             data={order.items}

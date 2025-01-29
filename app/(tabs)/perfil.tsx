@@ -223,7 +223,8 @@ const Perfil = () => {
                 className="bg-secundaria-50 p-3 rounded-lg mb-2"
               >
                 <Text className="text-secundaria-900">
-                  Pedido #{sale.id.slice(-6)}
+                  Pedido #{sale.idOrder.slice(-4)} -{" "}
+                  {sale.nomeCliente || "SEM NOME"}
                 </Text>
                 <Text className="text-quinta text-sm">
                   {new Date(sale.createdAt.toDate()).toLocaleDateString()}

@@ -21,15 +21,19 @@ import { onValue, ref } from "firebase/database";
 import { NotificationService } from "@/services/notificationService";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { Ionicons } from "@expo/vector-icons";
-
+import { useRouter } from "expo-router"; // Import useRouter
 
 export default function Pedidos() {
   const [showPending, setShowPending] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isConfirmationModalVisible, setIsConfirmationModalVisible] = useState(false);
-  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ orderId: string; status: OrderStatus } | null>(null);
+  const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
+    useState(false);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{
+    orderId: string;
+    status: OrderStatus;
+  } | null>(null);
 
   const { orders, loading, refreshing, setRefreshing, fetchOrders } = useOrders(
     showPending,
@@ -37,6 +41,8 @@ export default function Pedidos() {
     "createdAt",
     "desc"
   );
+
+  const router = useRouter(); // Initialize router
 
   const handleUpdateStatus = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
@@ -83,7 +89,7 @@ export default function Pedidos() {
   const updateOrderStatus = useCallback(
     (orderId: string, newStatus: OrderStatus) => {
       if (newStatus === "canceled") {
-        if (Platform.OS === 'web') {
+        if (Platform.OS === "web") {
           setPendingStatusUpdate({ orderId, status: newStatus });
           setIsConfirmationModalVisible(true);
         } else {
@@ -114,6 +120,16 @@ export default function Pedidos() {
     setIsModalVisible(true);
   }, []);
 
+  const handleEditOrder = useCallback(
+    (order: IOrder) => {
+      router.push({
+        pathname: "/screens/EditOrder",
+        params: { id: order.id },
+      }); // Navigate to EditOrder
+    },
+    [router]
+  );
+
   const handleCloseModal = useCallback(() => {
     setIsModalVisible(false);
     setSelectedOrder(null);
@@ -125,9 +141,10 @@ export default function Pedidos() {
         order={item}
         onPress={handleOrderPress}
         onStatusUpdate={updateOrderStatus}
+        onEditOrder={handleEditOrder} // Pass handleEditOrder to OrderCard
       />
     ),
-    [handleOrderPress, updateOrderStatus]
+    [handleOrderPress, updateOrderStatus, handleEditOrder]
   );
 
   useEffect(() => {
@@ -217,7 +234,7 @@ export default function Pedidos() {
             Finalizados
           </Text>
         </TouchableOpacity>
-        {Platform.OS === 'web' && (
+        {Platform.OS === "web" && (
           <TouchableOpacity
             className="w-9 h-9 ml-2 mr-4 bg-secundaria-400 items-center justify-center rounded-lg"
             onPress={() => fetchOrders()}
@@ -268,7 +285,10 @@ export default function Pedidos() {
         }}
         onConfirm={() => {
           if (pendingStatusUpdate) {
-            handleUpdateStatus(pendingStatusUpdate.orderId, pendingStatusUpdate.status);
+            handleUpdateStatus(
+              pendingStatusUpdate.orderId,
+              pendingStatusUpdate.status
+            );
           }
         }}
         title="Confirmar Cancelamento"

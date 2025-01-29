@@ -22,6 +22,14 @@ export const NotificationService = {
     });
   },
 
+  // Trigger a refresh without creating a notification
+  triggerOrdersRefresh: async () => {
+    const refreshRef = ref(rtdb, "orders/refresh");
+    await set(refreshRef, {
+      timestamp: new Date().toISOString(),
+    });
+  },
+
   // Assina as notificações de pedidos
   subscribeToOrderNotifications: (onNotification) => {
     const notificationsRef = ref(rtdb, "notifications/orders");

@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router"; // Import useRouter
 import { IOrder } from "@/types/types";
 import { OrderStatus } from "@/types/types";
 import {
@@ -17,6 +18,7 @@ interface OrderCardProps {
 }
 
 const OrderCard = memo(({ order, onPress, onStatusUpdate }: OrderCardProps) => {
+  const router = useRouter(); // Initialize router
   const formattedDate = formatDate(order.createdAt);
   const formattedHour = formatHourMinute(order.createdAt);
 
@@ -50,6 +52,18 @@ const OrderCard = memo(({ order, onPress, onStatusUpdate }: OrderCardProps) => {
         <View className="flex-row justify-end gap-4">
           {order.status === "pending" ? (
             <>
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: "/screens/EditOrder",
+                    params: { id: order.id },
+                  })
+                }
+                className="bg-blue-600 px-4 py-2 rounded"
+                accessibilityLabel="Editar pedido"
+              >
+                <Text className="text-primaria text-lg">Editar</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => onStatusUpdate(order.id, "canceled")}
                 className="bg-sexta px-4 py-2 rounded"
