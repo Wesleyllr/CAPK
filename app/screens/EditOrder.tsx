@@ -32,9 +32,7 @@ import FormFieldProduct from "@/components/FormFieldProduct";
 import { OrderService } from "@/services/OrderService";
 import CardProdutoSimplesV2 from "@/components/CardProdutoSimplesV2";
 import { rtdb } from "@/firebaseConfig";
-import { NotificationService } from "@/services/notificationService";
-import OrderConfirmationModal from "@/components/OrderConfirmationModal";
-import { doc, getDoc, updateDoc } from "firebase/firestore"; // Import getDoc and updateDoc
+import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore"; // Import getDoc, updateDoc, and onSnapshot
 import { db, auth } from "@/firebaseConfig"; // Import db and auth
 import { debounce } from "lodash"; // Add this import at the top
 
@@ -494,8 +492,14 @@ const EditOrder = () => {
         updatedAt: new Date(),
       });
 
-      // Replace sendOrderUpdatedNotification with triggerOrdersRefresh
-      await NotificationService.triggerOrdersRefresh();
+      // Use onSnapshot to listen for order updates
+      onSnapshot(orderRef, (doc) => {
+        if (doc.exists()) {
+          const orderData = doc.data();
+          console.log("Order updated:", orderData);
+        }
+      });
+
       await CartService.clearCart();
       cartEvents.emit("cartCleared");
       eventBus.emit("pedidoAtualizado");

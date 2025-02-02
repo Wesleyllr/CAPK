@@ -176,6 +176,8 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (!pinVerified) return; // Don't fetch data until PIN is verified
+
     const fetchDashboardData = async () => {
       try {
         const userId = auth.currentUser?.uid;
@@ -347,9 +349,7 @@ const Dashboard = () => {
       }
     };
 
-    if (pinVerified) {
-      fetchDashboardData();
-    }
+    fetchDashboardData();
   }, [pinVerified]);
 
   useEffect(() => {

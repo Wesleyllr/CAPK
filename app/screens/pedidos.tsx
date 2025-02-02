@@ -9,20 +9,28 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db, auth, rtdb } from "@/firebaseConfig";
+import {
+  doc,
+  updateDoc,
+  getDoc,
+  onSnapshot,
+  collection,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore";
+import { db, auth } from "@/firebaseConfig";
 import { IOrder } from "@/types/types";
 import { OrderStatus } from "@/types/types";
 import { useOrders } from "@/hooks/useOrders";
 import OrderCard from "@/components/OrderCard";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import eventBus from "@/utils/eventBus";
-import { onValue, ref } from "firebase/database";
-import { NotificationService } from "@/services/notificationService";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router"; // Import useRouter
+import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { reverseCategorySales, updateCategorySales } from "@/userService"; // Add this import
 
 const CACHE_KEY = "orders_cache";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
@@ -42,15 +50,16 @@ export default function Pedidos() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const lastUpdateRef = useRef<number>(0);
+  const [orders, setOrders] = useState<IOrder[]>([]);
 
-  const { orders, loading, refreshing, setRefreshing, fetchOrders } = useOrders(
+  const { loading, refreshing, setRefreshing, fetchOrders } = useOrders(
     showPending,
     20,
     "createdAt",
     "desc"
   );
 
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
 
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastRefreshTimeRef = useRef<number>(0);
@@ -86,7 +95,6 @@ export default function Pedidos() {
   };
 
   const debouncedFetchOrders = useCallback(() => {
-    // Prevent multiple refreshes within 3 seconds
     const now = Date.now();
     if (now - lastRefreshTimeRef.current < 2000) {
       return;
@@ -98,15 +106,11 @@ export default function Pedidos() {
 
     refreshTimeoutRef.current = setTimeout(async () => {
       try {
-        // Tenta carregar do cache primeiro
         const cachedData = await loadCachedOrders();
         if (cachedData) {
-          // Use os dados do cache
-          // Atualize seu estado aqui
           return;
         }
 
-        // Se não houver cache ou estiver expirado, busque do Firebase
         await fetchOrders();
         lastUpdateRef.current = now;
       } catch (error) {
@@ -124,22 +128,27 @@ export default function Pedidos() {
           throw new Error("Usuário não autenticado");
         }
 
-        // Construir a referência correta do documento
         const orderRef = doc(db, "orders", user.uid, "vendas", orderId);
 
-        // Verificar se o documento existe antes de tentar atualizar
         const orderDoc = await getDoc(orderRef);
         if (!orderDoc.exists()) {
           throw new Error("Pedido não encontrado");
         }
 
-        // Tentar atualizar o documento
+        const orderData = orderDoc.data();
+
+        if (orderData.status === "completed" && newStatus === "canceled") {
+          await reverseCategorySales(orderData.items); // Add this line
+        } else if (newStatus === "completed") {
+          await updateCategorySales(orderData.items); // Add this line
+        }
+        ("");
+
         await updateDoc(orderRef, {
           status: newStatus,
           updatedAt: new Date(),
         });
 
-        // Atualizar a lista de pedidos
         await fetchOrders();
         eventBus.emit("pedidoAtualizado");
       } catch (error) {
@@ -196,7 +205,7 @@ export default function Pedidos() {
       router.push({
         pathname: "/screens/EditOrder",
         params: { id: order.id },
-      }); // Navigate to EditOrder
+      });
     },
     [router]
   );
@@ -212,26 +221,11 @@ export default function Pedidos() {
         order={item}
         onPress={handleOrderPress}
         onStatusUpdate={updateOrderStatus}
-        onEditOrder={handleEditOrder} // Pass handleEditOrder to OrderCard
+        onEditOrder={handleEditOrder}
       />
     ),
     [handleOrderPress, updateOrderStatus, handleEditOrder]
   );
-
-  useEffect(() => {
-    // Inscreve-se nas notificações de pedidos
-    const unsubscribe = NotificationService.subscribeToOrderNotifications(
-      async (notification) => {
-        if (notification.status === "PENDING_REFRESH") {
-          await fetchOrders();
-          // Confirma que o refresh foi realizado
-          await NotificationService.confirmOrderRefresh();
-        }
-      }
-    );
-
-    return () => unsubscribe();
-  }, [fetchOrders]);
 
   useEffect(() => {
     const handlePedidoAtualizado = () => {
@@ -249,41 +243,30 @@ export default function Pedidos() {
   }, [debouncedFetchOrders]);
 
   useEffect(() => {
-    const ordersRef = ref(rtdb, "orders");
-    let unsubscribe: () => void;
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
 
-    // Limita as atualizações em tempo real
-    const setupRealTimeUpdates = () => {
-      unsubscribe = onValue(
-        ordersRef,
-        (snapshot) => {
-          if (snapshot.exists()) {
-            const now = Date.now();
-            // Atualiza apenas se passou tempo suficiente desde a última atualização
-            if (now - lastUpdateRef.current >= 2000) {
-              debouncedFetchOrders();
-              lastUpdateRef.current = now;
-            }
-          }
-        },
-        {
-          // Reduz a frequência de atualizações
-          onlyOnce: false,
-        }
+    const ordersRef = collection(db, "orders", userId, "vendas");
+    const status = showPending ? "pending" : "completed";
+    const q = query(
+      ordersRef,
+      where("status", "==", status),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          } as IOrder)
       );
-    };
+      setOrders(ordersData);
+    });
 
-    setupRealTimeUpdates();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-    };
-  }, [debouncedFetchOrders]);
+    return () => unsubscribe();
+  }, [showPending]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -348,7 +331,7 @@ export default function Pedidos() {
         <ActivityIndicator size="large" className="color-secundaria-700" />
       ) : (
         <FlatList
-          data={orders} // Ordena por createdAt (mais recente primeiro)
+          data={orders}
           renderItem={memoizedRenderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16 }}

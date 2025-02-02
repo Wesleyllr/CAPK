@@ -17,7 +17,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getUserInfo } from "@/userService";
+import { getUserInfo, updateCategorySales } from "@/userService"; // Add this import
 import { getUserProducts } from "@/scripts/productService";
 import { getUserCategories } from "@/userService";
 import CardProduto1 from "@/components/CardProduto1";
@@ -32,7 +32,6 @@ import FormFieldProduct from "@/components/FormFieldProduct";
 import { OrderService } from "@/services/OrderService";
 import CardProdutoSimplesV2 from "@/components/CardProdutoSimplesV2";
 import { rtdb } from "@/firebaseConfig";
-import { NotificationService } from "@/services/notificationService";
 import OrderConfirmationModal from "@/components/OrderConfirmationModal";
 
 const CACHE_KEY = "user_products_cache";
@@ -491,7 +490,10 @@ const Vender = () => {
         nomeCliente
       );
 
-      await NotificationService.sendOrderCreatedNotification();
+      if (status === "completed") {
+        await updateCategorySales(itemsWithCategory); // Add this line
+      }
+
       await CartService.clearCart();
       cartEvents.emit("cartCleared");
       eventBus.emit("pedidoAtualizado");

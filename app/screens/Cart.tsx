@@ -13,7 +13,9 @@ import EventEmitter from "eventemitter3";
 import eventBus from "@/utils/eventBus";
 import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 import FormFieldProduct from "@/components/FormFieldProduct";
-import { NotificationService } from "@/services/notificationService";
+import { db, auth } from "@/firebaseConfig";
+import { doc, onSnapshot } from "firebase/firestore";
+import { updateCategorySales } from "@/userService"; // Add this import
 
 // Criar uma instância global do EventEmitter
 export const cartEvents = new EventEmitter();
@@ -125,8 +127,9 @@ export default function Cart() {
         nomeCliente
       );
 
-      // Envia notificação de novo pedido
-      await NotificationService.sendOrderCreatedNotification();
+      if (status === "completed") {
+        await updateCategorySales(itemsWithCategory); // Add this line
+      }
 
       await CartService.clearCart();
       cartEvents.emit("cartCleared");
@@ -161,6 +164,20 @@ export default function Cart() {
       console.error("Erro ao salvar modo de visualização:", error);
     }
   };
+
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const ordersRef = doc(db, "orders", userId);
+    const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        eventBus.emit("pedidoAtualizado");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">
