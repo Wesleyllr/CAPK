@@ -5,6 +5,7 @@ import {
   getDocs,
   setDoc,
   runTransaction,
+  updateDoc, // Add updateDoc import
 } from "firebase/firestore"; // Add runTransaction import
 import { db, auth } from "@/firebaseConfig"; // Importando o Firestore e o Auth
 
@@ -159,7 +160,7 @@ export const updateOrderCounter = async () => {
   }
 };
 
-// Função para atualizar as vendas da categoria
+// Função para atualizar as vendas da categoria e dashboard
 export const updateCategorySales = async (items) => {
   const user = auth.currentUser;
 
@@ -191,12 +192,46 @@ export const updateCategorySales = async (items) => {
           totalVendido: newTotalVendido,
         });
       });
+
+      // Update dashboard
+      const currentDate = new Date();
+      const monthYear = `${
+        currentDate.getMonth() + 1
+      }-${currentDate.getFullYear()}`;
+      const day = currentDate.getDate();
+      const dashboardRef = doc(db, `users/${user.uid}/dashboard/${monthYear}`);
+
+      await runTransaction(db, async (transaction) => {
+        const dashboardDoc = await transaction.get(dashboardRef);
+
+        if (!dashboardDoc.exists()) {
+          const newDashboardData = {};
+          newDashboardData[day] = {
+            quantidade: item.quantity,
+            total: item.value * item.quantity,
+          };
+          transaction.set(dashboardRef, newDashboardData);
+        } else {
+          const dashboardData = dashboardDoc.data();
+          if (!dashboardData[day]) {
+            dashboardData[day] = {
+              quantidade: item.quantity,
+              total: item.value * item.quantity,
+            };
+          } else {
+            dashboardData[day].quantidade += item.quantity;
+            dashboardData[day].total += item.value * item.quantity;
+          }
+          transaction.update(dashboardRef, dashboardData);
+        }
+      });
     }
   } catch (error) {
     throw new Error("Erro ao atualizar vendas da categoria: " + error.message);
   }
 };
 
+// Função para reverter as vendas da categoria e dashboard
 export const reverseCategorySales = async (items) => {
   const user = auth.currentUser;
 
@@ -227,6 +262,29 @@ export const reverseCategorySales = async (items) => {
           produtosVendidos: newProdutosVendidos,
           totalVendido: newTotalVendido,
         });
+      });
+
+      // Update dashboard
+      const currentDate = new Date();
+      const monthYear = `${
+        currentDate.getMonth() + 1
+      }-${currentDate.getFullYear()}`;
+      const day = currentDate.getDate();
+      const dashboardRef = doc(db, `users/${user.uid}/dashboard/${monthYear}`);
+
+      await runTransaction(db, async (transaction) => {
+        const dashboardDoc = await transaction.get(dashboardRef);
+
+        if (!dashboardDoc.exists()) {
+          throw new Error("Dashboard não encontrado.");
+        } else {
+          const dashboardData = dashboardDoc.data();
+          if (dashboardData[day]) {
+            dashboardData[day].quantidade -= item.quantity;
+            dashboardData[day].total -= item.value * item.quantity;
+            transaction.update(dashboardRef, dashboardData);
+          }
+        }
       });
     }
   } catch (error) {

@@ -45,6 +45,7 @@ import CardDash from "@/components/dashboard/CardDash"; // Import the new compon
 import SalesByMonthChart from "@/components/dashboard/SalesByMonthChart"; // Import the new component
 import DashboardPinVerification from "@/components/DashboardPinVerification"; // Import the new component
 import { useFocusEffect } from "@react-navigation/native";
+import { getUserUid } from "@/userService"; // Import getUserUid from userService
 
 const renderActiveShape = (props) => {
   const RADIAN = Math.PI / 180;
@@ -180,170 +181,66 @@ const Dashboard = () => {
 
     const fetchDashboardData = async () => {
       try {
-        const userId = auth.currentUser?.uid;
+        const userId = await getUserUid();
         if (!userId) {
           console.log("Usuário não autenticado");
           return;
         }
 
-        const fetchAllData = async () => {
-          const categoriesRef = collection(db, `users/${userId}/category`);
-          const productsRef = collection(db, `users/${userId}/products`);
-          const vendasRef = collection(db, `orders/${userId}/vendas`);
+        const categoriesRef = collection(db, `users/${userId}/category`);
+        const categoriesSnapshot = await getDocs(categoriesRef);
 
-          const [categoriesSnapshot, productsSnapshot, vendasSnapshot] =
-            await Promise.all([
-              getDocs(categoriesRef),
-              getDocs(productsRef),
-              getDocs(vendasRef),
-            ]);
+        const categories = categoriesSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-          return {
-            categories: categoriesSnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })),
-            products: productsSnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })),
-            vendas: vendasSnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })),
-          };
-        };
-
-        const { categories, products, vendas } = await fetchAllData();
-
-        const categoriesMap = categories.reduce((acc, category) => {
-          acc[category.id] = category.name;
-          return acc;
-        }, {});
-
-        const productsMap = products.reduce((acc, product) => {
-          acc[product.id] = {
-            title: product.title,
-            categoryId: product.category,
-            value: parseFloat(product.value || 0),
-          };
-          return acc;
-        }, {});
-
-        const completedVendas = vendas.filter(
-          (venda) => venda.status === "completed"
-        );
-
-        const faturamentoTotal = completedVendas.reduce(
-          (acc, venda) => acc + venda.total,
+        const totalVendas = categories.reduce(
+          (acc, category) => acc + (category.produtosVendidos || 0),
           0
         );
-        const pedidosPendentes = vendas.filter(
-          (venda) => venda.status === "pending"
-        ).length;
+        const faturamentoTotal = categories.reduce(
+          (acc, category) => acc + (category.totalVendido || 0),
+          0
+        );
 
-        const produtosContagem = {};
-        const categoriasContagem = {};
-        const categoriasTotais = {};
-
-        completedVendas.forEach((venda) => {
-          venda.items.forEach((item) => {
-            const productId = item.id;
-            const categoryId = item.categoryId || item.category;
-
-            if (productId && productsMap[productId]) {
-              const productTitle = productsMap[productId].title;
-              produtosContagem[productTitle] =
-                (produtosContagem[productTitle] || 0) + item.quantity;
-            }
-
-            if (categoryId && categoriesMap[categoryId]) {
-              const categoryName = categoriesMap[categoryId];
-              categoriasContagem[categoryName] =
-                (categoriasContagem[categoryName] || 0) + item.quantity;
-              const itemTotal = item.value * item.quantity;
-              categoriasTotais[categoryName] =
-                (categoriasTotais[categoryName] || 0) + itemTotal;
-            }
-          });
-        });
-
-        const produtosMaisVendidos = Object.entries(produtosContagem)
-          .map(([title, quantidade]) => ({ title, quantidade }))
-          .sort((a, b) => b.quantidade - a.quantidade)
-          .slice(0, 5);
-
-        const categoriasMaisVendidas = Object.entries(categoriasContagem)
-          .map(([name, quantidade]) => ({
-            name,
-            quantidade,
-            valorTotal: categoriasTotais[name] || 0,
-            categoryId: Object.keys(categoriesMap).find(
-              (key) => categoriesMap[key] === name
-            ), // Add categoryId
+        const categoriasMaisVendidas = categories
+          .map((category) => ({
+            name: category.name,
+            quantidade: category.produtosVendidos || 0,
+            valorTotal: category.totalVendido || 0,
+            categoryId: category.id,
           }))
           .sort((a, b) => b.quantidade - a.quantidade)
           .slice(0, 5);
 
-        const vendasPorMes = completedVendas.reduce((acc, venda) => {
-          const data = venda.createdAt.toDate();
-          const mes = data.toLocaleString("pt-BR", { month: "short" });
-          const ano = data.getFullYear();
-          const existingMonth = acc.find(
-            (item) => item.mes === mes && item.ano === ano
+        // Fetch current month revenue
+        const currentDate = new Date();
+        const monthYear = `${
+          currentDate.getMonth() + 1
+        }-${currentDate.getFullYear()}`;
+        const dashboardRef = doc(db, `users/${userId}/dashboard/${monthYear}`);
+        const dashboardDoc = await getDoc(dashboardRef);
+
+        let currentMonthRevenue = 0;
+        if (dashboardDoc.exists()) {
+          const dashboardData = dashboardDoc.data();
+          currentMonthRevenue = Object.values(dashboardData).reduce(
+            (acc, dayData) => acc + dayData.total,
+            0
           );
-
-          if (existingMonth) {
-            existingMonth.total += venda.total;
-          } else {
-            acc.push({ mes, ano, total: venda.total });
-          }
-          return acc;
-        }, []);
-
-        const uniqueYears = [...new Set(vendasPorMes.map((item) => item.ano))];
-        setAvailableYears(uniqueYears);
-
-        const overallSales = completedVendas.reduce((acc, venda) => {
-          const data = venda.createdAt.toDate();
-          const date = data.toLocaleDateString("pt-BR");
-          const existingDate = acc.find((item) => item.date === date);
-
-          if (existingDate) {
-            existingDate.total += venda.total;
-            existingDate.items.push(...venda.items);
-          } else {
-            acc.push({ date, total: venda.total, items: venda.items });
-          }
-          return acc;
-        }, []);
-
-        overallSales.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        const currentMonth = new Date().toLocaleString("pt-BR", {
-          month: "short",
-        });
-
-        const currentMonthRevenue = completedVendas
-          .filter(
-            (venda) =>
-              venda.createdAt
-                .toDate()
-                .toLocaleString("pt-BR", { month: "short" }) === currentMonth
-          )
-          .reduce((acc, venda) => acc + venda.total, 0);
+        }
 
         setSalesData({
-          totalVendas: completedVendas.length,
+          totalVendas,
           faturamentoTotal,
-          pedidosPendentes,
-          produtosMaisVendidos, // Set produtosMaisVendidos
+          pedidosPendentes: 0, // This can be updated with a separate query if needed
+          produtosMaisVendidos: [], // This can be updated with a separate query if needed
           categoriasMaisVendidas,
-          vendasPorMes,
+          vendasPorMes: [], // This can be updated with a separate query if needed
         });
 
         setCurrentMonthRevenue(currentMonthRevenue);
-        setOverallSalesData(overallSales);
       } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);
       }
