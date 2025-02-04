@@ -40,6 +40,7 @@ export const getUserCategories = async () => {
 
   try {
     const querySnapshot = await getDocs(categoriesRef);
+    console.log(`userService Categorias lidas: ${querySnapshot.size}`);
 
     if (querySnapshot.empty) {
       return []; // Retorna uma lista vazia se não houver categorias
@@ -177,6 +178,9 @@ export const updateCategorySales = async (items) => {
 
       await runTransaction(db, async (transaction) => {
         const categoryDoc = await transaction.get(categoryRef);
+        console.log(
+          `Categoria documento lido: ${categoryDoc.exists() ? "Sim" : "Não"}`
+        );
 
         if (!categoryDoc.exists()) {
           throw new Error("Categoria não encontrada.");
@@ -203,6 +207,9 @@ export const updateCategorySales = async (items) => {
 
       await runTransaction(db, async (transaction) => {
         const dashboardDoc = await transaction.get(dashboardRef);
+        console.log(
+          `Dashboard documento lido: ${dashboardDoc.exists() ? "Sim" : "Não"}`
+        );
 
         if (!dashboardDoc.exists()) {
           const newDashboardData = {};

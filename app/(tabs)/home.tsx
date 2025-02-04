@@ -18,6 +18,9 @@ import {
   where,
   getDocs,
   Timestamp,
+  doc,
+  getDoc,
+  limit, // Add this import
 } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons";
@@ -64,6 +67,7 @@ const Home = () => {
       const userId = user.uid;
 
       // Recuperar username e foto do usuário
+      console.log("Fetching user info...");
       const username = await getUserInfo("username");
       const photoURL = user.photoURL || null;
 
@@ -75,32 +79,43 @@ const Home = () => {
       const weekStart = new Date(now.setDate(now.getDate() - 7));
       const monthStart = new Date(now.setDate(1));
 
-      const vendasRef = collection(db, "orders", userId, "vendas");
-
-      // Consulta para vendas com status "completed"
-      const completedQuery = query(
-        vendasRef,
-        where("status", "==", "completed"),
-        where("createdAt", ">=", Timestamp.fromDate(monthStart))
-      );
-      const completedSnapshot = await getDocs(completedQuery);
+      const monthYear = `${now.getMonth() + 1}-${now.getFullYear()}`;
+      const dashboardRef = doc(db, `users/${userId}/dashboard/${monthYear}`);
+      console.log("Fetching dashboard data...");
+      const dashboardDoc = await getDoc(dashboardRef);
 
       let daily = 0,
         weekly = 0,
         monthly = 0;
 
-      completedSnapshot.forEach((doc) => {
-        const order = { id: doc.id, ...doc.data() };
-        const orderDate = order.createdAt.toDate();
+      if (dashboardDoc.exists()) {
+        const dashboardData = dashboardDoc.data();
+        console.log("Dashboard data fetched:", dashboardData);
+        console.log(
+          "Number of reads for dashboard data:",
+          Object.keys(dashboardData).length
+        );
 
-        if (orderDate >= dayStart) daily += order.total;
-        if (orderDate >= weekStart) weekly += order.total;
-        monthly += order.total;
-      });
+        Object.keys(dashboardData).forEach((day) => {
+          const dayData = dashboardData[day];
+          const dayDate = new Date(now.getFullYear(), now.getMonth(), day);
 
-      // Consulta para pedidos pendentes
-      const pendingQuery = query(vendasRef, where("status", "==", "pending"));
+          if (dayDate >= dayStart) daily += dayData.total;
+          if (dayDate >= weekStart) weekly += dayData.total;
+          monthly += dayData.total;
+        });
+      }
+
+      // Consulta para pedidos pendentes com limite
+      console.log("Fetching pending orders...");
+      const pendingQuery = query(
+        collection(db, "orders", userId, "vendas"),
+        where("status", "==", "pending"),
+        where("createdAt", ">=", Timestamp.fromDate(monthStart)),
+        limit(10) // Adiciona um limite de 10 leituras
+      );
       const pendingSnapshot = await getDocs(pendingQuery);
+      console.log("Pending orders fetched:", pendingSnapshot.size);
 
       const pending = [];
       pendingSnapshot.forEach((doc) => {

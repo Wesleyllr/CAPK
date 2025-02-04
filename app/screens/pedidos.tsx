@@ -54,7 +54,7 @@ export default function Pedidos() {
 
   const { loading, refreshing, setRefreshing, fetchOrders } = useOrders(
     showPending,
-    20,
+    ORDERS_PER_PAGE, // Limite de pedidos por página
     "createdAt",
     "desc"
   );
@@ -344,8 +344,8 @@ export default function Pedidos() {
           }
           onEndReached={loadMoreOrders}
           onEndReachedThreshold={0.5}
-          initialNumToRender={ORDERS_PER_PAGE}
-          maxToRenderPerBatch={ORDERS_PER_PAGE}
+          initialNumToRender={ORDERS_PER_PAGE} // Limite inicial de pedidos renderizados
+          maxToRenderPerBatch={ORDERS_PER_PAGE} // Máximo de pedidos renderizados por lote
           windowSize={5}
           removeClippedSubviews={true}
         />
