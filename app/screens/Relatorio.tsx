@@ -99,8 +99,6 @@ const Relatorio = () => {
           fetchCategories(userId),
         ]);
 
-        console.log("Fetched sales:", sales.length);
-
         const formattedData = sales.flatMap((sale) => {
           let saleDate = normalizeDate(
             sale.createdAt?.toDate?.() || sale.createdAt
@@ -164,7 +162,6 @@ const Relatorio = () => {
             });
         });
 
-        console.log("Formatted data length:", formattedData.length);
         setData(formattedData);
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
@@ -177,12 +174,8 @@ const Relatorio = () => {
   }, [categoryId, startDate, endDate]);
 
   const prepareExportData = (rawData) => {
-    console.log("Raw data length:", rawData.length);
-
     // Removemos o filtro de data pois os dados já estão filtrados corretamente
     const filteredData = rawData;
-
-    console.log("Filtered data length:", filteredData.length);
 
     return filteredData.map((item) => ({
       "Número do Pedido": item.idOrder,

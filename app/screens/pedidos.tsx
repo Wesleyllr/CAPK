@@ -18,6 +18,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
 } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
 import { IOrder } from "@/types/types";
@@ -30,7 +31,7 @@ import ConfirmationModal from "@/components/ConfirmationModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { reverseCategorySales, updateCategorySales } from "@/userService"; // Add this import
+import { reverseCategorySales, updateCategorySales } from "@/userService";
 
 const CACHE_KEY = "orders_cache";
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
@@ -138,11 +139,10 @@ export default function Pedidos() {
         const orderData = orderDoc.data();
 
         if (orderData.status === "completed" && newStatus === "canceled") {
-          await reverseCategorySales(orderData.items); // Add this line
+          await reverseCategorySales(orderData.items);
         } else if (newStatus === "completed") {
-          await updateCategorySales(orderData.items); // Add this line
+          await updateCategorySales(orderData.items);
         }
-        ("");
 
         await updateDoc(orderRef, {
           status: newStatus,
@@ -251,7 +251,8 @@ export default function Pedidos() {
     const q = query(
       ordersRef,
       where("status", "==", status),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(ORDERS_PER_PAGE * page) // Adicionar limite baseado na página atual
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -263,10 +264,11 @@ export default function Pedidos() {
           } as IOrder)
       );
       setOrders(ordersData);
+      setHasMore(ordersData.length === ORDERS_PER_PAGE * page); // Atualizar hasMore
     });
 
     return () => unsubscribe();
-  }, [showPending]);
+  }, [showPending, page]); // Adicionar page como dependência
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

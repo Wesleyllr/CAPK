@@ -5,9 +5,9 @@ import {
   getDocs,
   setDoc,
   runTransaction,
-  updateDoc, // Add updateDoc import
-} from "firebase/firestore"; // Add runTransaction import
-import { db, auth } from "@/firebaseConfig"; // Importando o Firestore e o Auth
+  updateDoc,
+} from "firebase/firestore";
+import { db, auth } from "@/firebaseConfig";
 
 // Função para buscar as informações do usuário
 export const getUserInfo = async (field) => {
@@ -40,8 +40,6 @@ export const getUserCategories = async () => {
 
   try {
     const querySnapshot = await getDocs(categoriesRef);
-    console.log(`userService Categorias lidas: ${querySnapshot.size}`);
-
     if (querySnapshot.empty) {
       return []; // Retorna uma lista vazia se não houver categorias
     }
@@ -178,18 +176,20 @@ export const updateCategorySales = async (items) => {
 
       await runTransaction(db, async (transaction) => {
         const categoryDoc = await transaction.get(categoryRef);
-        console.log(
-          `Categoria documento lido: ${categoryDoc.exists() ? "Sim" : "Não"}`
-        );
-
         if (!categoryDoc.exists()) {
           throw new Error("Categoria não encontrada.");
         }
 
-        const newProdutosVendidos =
-          (categoryDoc.data().produtosVendidos || 0) + item.quantity;
-        const newTotalVendido =
-          (categoryDoc.data().totalVendido || 0) + item.value * item.quantity;
+        // Garante que os valores são números
+        const quantity = parseInt(item.quantity) || 0;
+        const price = parseFloat(item.value) || 0;
+        const existingProdutosVendidos =
+          parseInt(categoryDoc.data().produtosVendidos) || 0;
+        const existingTotalVendido =
+          parseFloat(categoryDoc.data().totalVendido) || 0;
+
+        const newProdutosVendidos = existingProdutosVendidos + quantity;
+        const newTotalVendido = existingTotalVendido + price * quantity;
 
         transaction.update(categoryRef, {
           produtosVendidos: newProdutosVendidos,
@@ -207,33 +207,37 @@ export const updateCategorySales = async (items) => {
 
       await runTransaction(db, async (transaction) => {
         const dashboardDoc = await transaction.get(dashboardRef);
-        console.log(
-          `Dashboard documento lido: ${dashboardDoc.exists() ? "Sim" : "Não"}`
-        );
+        const quantity = parseInt(item.quantity) || 0;
+        const price = parseFloat(item.value) || 0;
+        const total = price * quantity;
 
         if (!dashboardDoc.exists()) {
           const newDashboardData = {};
           newDashboardData[day] = {
-            quantidade: item.quantity,
-            total: item.value * item.quantity,
+            quantidade: quantity,
+            total: total,
           };
           transaction.set(dashboardRef, newDashboardData);
         } else {
           const dashboardData = dashboardDoc.data();
           if (!dashboardData[day]) {
             dashboardData[day] = {
-              quantidade: item.quantity,
-              total: item.value * item.quantity,
+              quantidade: quantity,
+              total: total,
             };
           } else {
-            dashboardData[day].quantidade += item.quantity;
-            dashboardData[day].total += item.value * item.quantity;
+            const existingQuantidade =
+              parseInt(dashboardData[day].quantidade) || 0;
+            const existingTotal = parseFloat(dashboardData[day].total) || 0;
+            dashboardData[day].quantidade = existingQuantidade + quantity;
+            dashboardData[day].total = existingTotal + total;
           }
           transaction.update(dashboardRef, dashboardData);
         }
       });
     }
   } catch (error) {
+    console.error("Erro ao atualizar vendas da categoria:", error.message);
     throw new Error("Erro ao atualizar vendas da categoria: " + error.message);
   }
 };

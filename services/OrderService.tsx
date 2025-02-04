@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
 import { ICartItem, IOrder } from "@/types/types";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
 export class OrderService {
   private static ORDERS_COLLECTION = "orders";
@@ -24,19 +25,16 @@ export class OrderService {
     try {
       // Tenta obter o documento do contador
       const counterDoc = await getDoc(counterRef);
-      console.log("Counter document:", counterDoc);
       let nextNumber;
       if (!counterDoc.exists()) {
         // Se o documento não existir, cria com valor inicial
         nextNumber = 1;
-        console.log("Counter document does not exist. Initializing with 1.");
         await setDoc(counterRef, {
           currentNumber: nextNumber,
         });
       } else {
         // Se existir, incrementa o valor atual
         nextNumber = counterDoc.data().currentNumber + 1;
-        console.log("Counter document exists. Incrementing to:", nextNumber);
         await setDoc(counterRef, {
           currentNumber: nextNumber,
         });
@@ -44,10 +42,10 @@ export class OrderService {
 
       // Formata o número com zeros à esquerda para ter 8 dígitos
       const formattedNumber = nextNumber.toString().padStart(8, "0");
-      console.log("Formatted order number:", formattedNumber);
       return formattedNumber;
     } catch (error) {
       console.error("Error in getNextOrderId:", error);
+
       throw new Error(`Failed to generate order number: ${error.message}`);
     }
   }
@@ -63,7 +61,6 @@ export class OrderService {
     try {
       // Gera o próximo número de ordem
       const idOrder = await this.getNextOrderId();
-      console.log("Generated order ID:", idOrder);
 
       const orderData: Omit<IOrder, "id"> = {
         idOrder,
@@ -74,7 +71,6 @@ export class OrderService {
         createdAt: new Date(),
         nomeCliente,
       };
-      console.log("Order data:", orderData);
 
       // Referenciar a subcoleção `vendas` dentro do documento do usuário
       const vendasCollection = collection(
@@ -88,7 +84,6 @@ export class OrderService {
         idOrder,
         createdAt: Timestamp.fromDate(orderData.createdAt),
       });
-      console.log("Order reference ID:", orderRef.id);
 
       return { orderRefId: orderRef.id, idOrder };
     } catch (error: any) {

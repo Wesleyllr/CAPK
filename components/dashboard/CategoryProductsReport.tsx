@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/CardComponents";
 import { View, Text } from "react-native";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
 const CategoryProductsReport = ({ categoryId }) => {
   const [products, setProducts] = useState([]);
@@ -16,7 +17,11 @@ const CategoryProductsReport = ({ categoryId }) => {
     const fetchProducts = async () => {
       const userId = auth.currentUser?.uid;
       if (!userId) {
-        console.log("Usuário não autenticado");
+        alertaPersonalizado({
+          message: "Erro",
+          description: "Usuário não autenticado",
+          type: "danger",
+        });
         return;
       }
 

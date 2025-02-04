@@ -31,7 +31,6 @@ const SalesByMonthChart: React.FC<SalesByMonthChartProps> = ({
   filteredSalesData,
 }) => {
   const [sliderValue, setSliderValue] = useState([0, 11]);
-  console.log("Filtered Sales Data:", filteredSalesData);
 
   const monthLabels = [
     "jan.",
@@ -54,8 +53,6 @@ const SalesByMonthChart: React.FC<SalesByMonthChartProps> = ({
     for (let i = value[0]; i <= value[1]; i++) {
       selected.push(monthLabels[i]);
     }
-    console.log("Slider value:", value);
-    console.log("Selected months:", selected);
     handleMonthChange(selected);
   };
 

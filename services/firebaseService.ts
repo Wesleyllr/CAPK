@@ -27,14 +27,12 @@ export const fetchProducts = async (userId: string) => {
       observations: data.observations // Adicionando observations aqui
     };
   });
-  console.log("Products map:", productsMap);
   return productsMap;
 };
 
 export const fetchSales = async (userId: string) => {
   const vendasRef = collection(db, `orders/${userId}/vendas`);
   const vendasSnapshot = await getDocs(vendasRef);
-  console.log("Sales snapshot:", vendasSnapshot.docs.map(doc => doc.data()));
   return vendasSnapshot.docs.map((doc) => {
     const data = doc.data();
     return {

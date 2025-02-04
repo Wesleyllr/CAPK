@@ -107,7 +107,6 @@ const CategoriesChart = ({ categoriasMaisVendidas }) => {
   };
 
   const handleCategoryClick = (categoryId) => {
-    console.log(`Categoria clicada: ${categoryId}`);
     router.push({
       pathname: "/screens/Relatorio",
       params: { categoryId },

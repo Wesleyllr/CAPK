@@ -474,7 +474,7 @@ const Vender = () => {
     try {
       const items = await CartService.getItems();
       const total = items.reduce(
-        (sum, item) => sum + item.value * item.quantity,
+        (sum, item) => sum + (item.value || 0) * item.quantity,
         0
       );
 
@@ -491,7 +491,7 @@ const Vender = () => {
       );
 
       if (status === "completed") {
-        await updateCategorySales(itemsWithCategory); // Add this line
+        await updateCategorySales(itemsWithCategory);
       }
 
       await CartService.clearCart();
@@ -505,12 +505,13 @@ const Vender = () => {
         type: "success",
       });
 
-      setnomeCliente(""); // Clear the client name
+      setnomeCliente("");
 
       if (Platform.OS !== "web") {
         router.back();
       }
     } catch (error) {
+      console.error("Erro ao processar pedido:", error.message);
       alertaPersonalizado({
         message: "Erro",
         description: error.message || error,

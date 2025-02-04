@@ -11,7 +11,7 @@ import {
   BackHandler, // Add this import
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, usePathname } from "expo-router"; // Add usePathname import
 import {
   collection,
   query,
@@ -34,6 +34,7 @@ import PinVerificationModal from "@/components/PinVerificationModal";
 
 const Home = () => {
   const router = useRouter();
+  const pathname = usePathname(); // Add this hook
   const [salesData, setSalesData] = useState({
     daily: 0,
     weekly: 0,
@@ -66,8 +67,6 @@ const Home = () => {
 
       const userId = user.uid;
 
-      // Recuperar username e foto do usuário
-      console.log("Fetching user info...");
       const username = await getUserInfo("username");
       const photoURL = user.photoURL || null;
 
@@ -81,7 +80,6 @@ const Home = () => {
 
       const monthYear = `${now.getMonth() + 1}-${now.getFullYear()}`;
       const dashboardRef = doc(db, `users/${userId}/dashboard/${monthYear}`);
-      console.log("Fetching dashboard data...");
       const dashboardDoc = await getDoc(dashboardRef);
 
       let daily = 0,
@@ -90,12 +88,6 @@ const Home = () => {
 
       if (dashboardDoc.exists()) {
         const dashboardData = dashboardDoc.data();
-        console.log("Dashboard data fetched:", dashboardData);
-        console.log(
-          "Number of reads for dashboard data:",
-          Object.keys(dashboardData).length
-        );
-
         Object.keys(dashboardData).forEach((day) => {
           const dayData = dashboardData[day];
           const dayDate = new Date(now.getFullYear(), now.getMonth(), day);
@@ -106,16 +98,13 @@ const Home = () => {
         });
       }
 
-      // Consulta para pedidos pendentes com limite
-      console.log("Fetching pending orders...");
       const pendingQuery = query(
         collection(db, "orders", userId, "vendas"),
         where("status", "==", "pending"),
         where("createdAt", ">=", Timestamp.fromDate(monthStart)),
-        limit(10) // Adiciona um limite de 10 leituras
+        limit(10)
       );
       const pendingSnapshot = await getDocs(pendingQuery);
-      console.log("Pending orders fetched:", pendingSnapshot.size);
 
       const pending = [];
       pendingSnapshot.forEach((doc) => {
@@ -123,11 +112,9 @@ const Home = () => {
         pending.push(order);
       });
 
-      // Atualiza os estados
       setSalesData({ daily, weekly, monthly });
       setPendingOrders(pending);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
       Alert.alert("Erro", "Falha ao carregar dados");
     } finally {
       setLoading(false);
@@ -277,25 +264,29 @@ const Home = () => {
     );
   };
 
-  // Add back button handler
+  // Modify back button handler
   useEffect(() => {
     const backAction = () => {
-      Alert.alert(
-        "Sair do Aplicativo",
-        "Deseja realmente sair do aplicativo?",
-        [
-          {
-            text: "Cancelar",
-            onPress: () => null,
-            style: "cancel",
-          },
-          {
-            text: "Sim",
-            onPress: () => BackHandler.exitApp(),
-          },
-        ]
-      );
-      return true; // Prevents default back button behavior
+      // Check if we're on the home screen
+      if (pathname === "/home" || pathname === "/(tabs)/home") {
+        Alert.alert(
+          "Sair do Aplicativo",
+          "Deseja realmente sair do aplicativo?",
+          [
+            {
+              text: "Cancelar",
+              onPress: () => null,
+              style: "cancel",
+            },
+            {
+              text: "Sim",
+              onPress: () => BackHandler.exitApp(),
+            },
+          ]
+        );
+        return true; // Prevents default back button behavior
+      }
+      return false; // Allows default back button behavior on other screens
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -304,7 +295,7 @@ const Home = () => {
     );
 
     return () => backHandler.remove();
-  }, []);
+  }, [pathname]); // Update dependency array to use pathname
 
   return (
     <SafeAreaView className="flex-1 bg-primaria">

@@ -44,6 +44,7 @@ import SalesByMonthChart from "@/components/dashboard/SalesByMonthChart";
 import DashboardPinVerification from "@/components/DashboardPinVerification";
 import { useFocusEffect } from "@react-navigation/native";
 import { getUserUid } from "@/userService";
+import { alertaPersonalizado } from "@/utils/alertaPersonalizado";
 
 const Dashboard = () => {
   const [pinVerified, setPinVerified] = useState(false);
@@ -103,13 +104,16 @@ const Dashboard = () => {
       try {
         const userId = await getUserUid();
         if (!userId) {
-          console.log("Usuário não autenticado");
+          alertaPersonalizado({
+            message: "Erro",
+            description: "Usuário não autenticado",
+            type: "danger",
+          });
           return;
         }
 
         const categoriesRef = collection(db, `users/${userId}/category`);
         const categoriesSnapshot = await getDocs(categoriesRef);
-        console.log(`Categorias lidas: ${categoriesSnapshot.size}`);
 
         const categories = categoriesSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -141,9 +145,6 @@ const Dashboard = () => {
         }-${currentDate.getFullYear()}`;
         const dashboardRef = doc(db, `users/${userId}/dashboard/${monthYear}`);
         const dashboardDoc = await getDoc(dashboardRef);
-        console.log(
-          `Dashboard documento lido: ${dashboardDoc.exists() ? "Sim" : "Não"}`
-        );
 
         let currentMonthRevenue = 0;
         if (dashboardDoc.exists()) {
@@ -189,7 +190,6 @@ const Dashboard = () => {
   }, []);
 
   const handleMonthChange = (selected: string[]) => {
-    console.log("Selected months in Dashboard:", selected);
     setSelectedMonths(selected);
   };
 
@@ -202,7 +202,6 @@ const Dashboard = () => {
   };
 
   const handleYearChange = (year: number) => {
-    console.log("Selected year in Dashboard:", year);
     setSelectedYear(year);
   };
 
@@ -226,7 +225,6 @@ const Dashboard = () => {
       const result =
         (selectedMonths.length === 0 || selectedMonths.includes(data.mes)) &&
         data.ano === selectedYear;
-      console.log("Filtering data:", data, "Result:", result);
       return result;
     })
     .sort((a, b) => monthLabels.indexOf(a.mes) - monthLabels.indexOf(b.mes));

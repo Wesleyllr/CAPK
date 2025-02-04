@@ -496,7 +496,6 @@ const EditOrder = () => {
       onSnapshot(orderRef, (doc) => {
         if (doc.exists()) {
           const orderData = doc.data();
-          console.log("Order updated:", orderData);
         }
       });
 
